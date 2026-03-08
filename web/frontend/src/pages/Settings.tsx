@@ -1,11 +1,22 @@
 import { useEffect, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { Send, MessageSquare, Bell, Mail, Eye, EyeOff } from 'lucide-react'
-import { getNotificationSettings, updateNotificationSettings, NotificationSettings } from '../lib/api'
+import { Send, MessageSquare, Bell, Mail, Eye, EyeOff, FlaskConical } from 'lucide-react'
+import {
+  getNotificationSettings, updateNotificationSettings, NotificationSettings,
+  testTelegram, testDiscord, testPushover, testEmail,
+} from '../lib/api'
 import { useToast } from '../lib/ToastContext'
 import { Card, CardHeader, CardTitle } from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Input from '../components/ui/Input'
+
+function useTest(fn: () => Promise<{ message: string }>, label: string) {
+  const { addToast } = useToast()
+  return useMutation({
+    mutationFn: fn,
+    onSuccess: r => addToast(r.message, 'success'),
+  })
+}
 
 export default function Settings() {
   const qc = useQueryClient()
@@ -25,6 +36,11 @@ export default function Settings() {
     },
   })
 
+  const tgTest  = useTest(testTelegram, 'Telegram')
+  const dcTest  = useTest(testDiscord,  'Discord')
+  const poTest  = useTest(testPushover, 'Pushover')
+  const emTest  = useTest(testEmail,    'Email')
+
   if (isLoading) return <p className="text-gray-400 dark:text-slate-400">Loading settings…</p>
   if (!data) return <p className="text-red-500">Failed to load settings.</p>
 
@@ -36,10 +52,10 @@ export default function Settings() {
         take effect immediately without restart.
       </p>
 
-      <TelegramCard  initial={data.telegram}  onSave={v => saveMut.mutate({ telegram: v })}  loading={saveMut.isPending} />
-      <DiscordCard   initial={data.discord}   onSave={v => saveMut.mutate({ discord: v })}   loading={saveMut.isPending} />
-      <PushoverCard  initial={data.pushover}  onSave={v => saveMut.mutate({ pushover: v })}  loading={saveMut.isPending} />
-      <EmailCard     initial={data.email}     onSave={v => saveMut.mutate({ email: v })}     loading={saveMut.isPending} />
+      <TelegramCard  initial={data.telegram}  onSave={v => saveMut.mutate({ telegram: v })}  loading={saveMut.isPending}  onTest={() => tgTest.mutate()}  testing={tgTest.isPending} />
+      <DiscordCard   initial={data.discord}   onSave={v => saveMut.mutate({ discord: v })}   loading={saveMut.isPending}  onTest={() => dcTest.mutate()}  testing={dcTest.isPending} />
+      <PushoverCard  initial={data.pushover}  onSave={v => saveMut.mutate({ pushover: v })}  loading={saveMut.isPending}  onTest={() => poTest.mutate()}  testing={poTest.isPending} />
+      <EmailCard     initial={data.email}     onSave={v => saveMut.mutate({ email: v })}     loading={saveMut.isPending}  onTest={() => emTest.mutate()}  testing={emTest.isPending} />
     </div>
   )
 }
@@ -95,10 +111,10 @@ function SecretInput({ value, onChange, placeholder }: { value: string; onChange
 
 // ── Telegram ──────────────────────────────────────────────────────────────────
 
-function TelegramCard({ initial, onSave, loading }: {
+function TelegramCard({ initial, onSave, loading, onTest, testing }: {
   initial: NotificationSettings['telegram']
   onSave: (v: NotificationSettings['telegram']) => void
-  loading: boolean
+  loading: boolean; onTest: () => void; testing: boolean
 }) {
   const [form, setForm] = useState(initial)
   useEffect(() => setForm(initial), [initial])
@@ -121,7 +137,10 @@ function TelegramCard({ initial, onSave, loading }: {
           <Input value={form.chat_id} onChange={e => set('chat_id')(e.target.value)} placeholder="-100123456789" />
         </Field>
       </div>
-      <div className="flex justify-end mt-3">
+      <div className="flex justify-end gap-2 mt-3">
+        <Button size="sm" variant="secondary" onClick={onTest} disabled={testing || !form.enabled}>
+          <FlaskConical size={13} /> {testing ? 'Sending…' : 'Test'}
+        </Button>
         <Button size="sm" onClick={() => onSave(form)} disabled={loading}>
           {loading ? 'Saving…' : 'Save Telegram'}
         </Button>
@@ -132,10 +151,10 @@ function TelegramCard({ initial, onSave, loading }: {
 
 // ── Discord ───────────────────────────────────────────────────────────────────
 
-function DiscordCard({ initial, onSave, loading }: {
+function DiscordCard({ initial, onSave, loading, onTest, testing }: {
   initial: NotificationSettings['discord']
   onSave: (v: NotificationSettings['discord']) => void
-  loading: boolean
+  loading: boolean; onTest: () => void; testing: boolean
 }) {
   const [form, setForm] = useState(initial)
   useEffect(() => setForm(initial), [initial])
@@ -153,7 +172,10 @@ function DiscordCard({ initial, onSave, loading }: {
       <Field label="Webhook URL">
         <SecretInput value={form.webhook_url} onChange={v => set('webhook_url')(v)} placeholder="https://discord.com/api/webhooks/..." />
       </Field>
-      <div className="flex justify-end mt-3">
+      <div className="flex justify-end gap-2 mt-3">
+        <Button size="sm" variant="secondary" onClick={onTest} disabled={testing || !form.enabled}>
+          <FlaskConical size={13} /> {testing ? 'Sending…' : 'Test'}
+        </Button>
         <Button size="sm" onClick={() => onSave(form)} disabled={loading}>
           {loading ? 'Saving…' : 'Save Discord'}
         </Button>
@@ -164,10 +186,10 @@ function DiscordCard({ initial, onSave, loading }: {
 
 // ── Pushover ──────────────────────────────────────────────────────────────────
 
-function PushoverCard({ initial, onSave, loading }: {
+function PushoverCard({ initial, onSave, loading, onTest, testing }: {
   initial: NotificationSettings['pushover']
   onSave: (v: NotificationSettings['pushover']) => void
-  loading: boolean
+  loading: boolean; onTest: () => void; testing: boolean
 }) {
   const [form, setForm] = useState(initial)
   useEffect(() => setForm(initial), [initial])
@@ -190,7 +212,10 @@ function PushoverCard({ initial, onSave, loading }: {
           <SecretInput value={form.user_key} onChange={v => set('user_key')(v)} placeholder="uQiRzpo4DXghDmr..." />
         </Field>
       </div>
-      <div className="flex justify-end mt-3">
+      <div className="flex justify-end gap-2 mt-3">
+        <Button size="sm" variant="secondary" onClick={onTest} disabled={testing || !form.enabled}>
+          <FlaskConical size={13} /> {testing ? 'Sending…' : 'Test'}
+        </Button>
         <Button size="sm" onClick={() => onSave(form)} disabled={loading}>
           {loading ? 'Saving…' : 'Save Pushover'}
         </Button>
@@ -201,10 +226,10 @@ function PushoverCard({ initial, onSave, loading }: {
 
 // ── Email ─────────────────────────────────────────────────────────────────────
 
-function EmailCard({ initial, onSave, loading }: {
+function EmailCard({ initial, onSave, loading, onTest, testing }: {
   initial: NotificationSettings['email']
   onSave: (v: NotificationSettings['email']) => void
-  loading: boolean
+  loading: boolean; onTest: () => void; testing: boolean
 }) {
   const [form, setForm] = useState(initial)
   useEffect(() => setForm(initial), [initial])
@@ -239,7 +264,10 @@ function EmailCard({ initial, onSave, loading }: {
           <Input value={form.from_name} onChange={e => set('from_name')(e.target.value)} placeholder="GuardianStreams Billing" />
         </Field>
       </div>
-      <div className="flex justify-end mt-3">
+      <div className="flex justify-end gap-2 mt-3">
+        <Button size="sm" variant="secondary" onClick={onTest} disabled={testing || !form.enabled}>
+          <FlaskConical size={13} /> {testing ? 'Sending…' : 'Test'}
+        </Button>
         <Button size="sm" onClick={() => onSave(form)} disabled={loading}>
           {loading ? 'Saving…' : 'Save Email'}
         </Button>

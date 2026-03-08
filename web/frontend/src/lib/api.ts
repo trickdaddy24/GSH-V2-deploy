@@ -164,8 +164,10 @@ export const importSubscribers = (data: unknown[]) =>
 export const triggerBackup = () =>
   api.post('/notifications/backup').then(r => r.data)
 
-export const testTelegram = () =>
-  api.post('/notifications/test/telegram').then(r => r.data)
+export const testTelegram  = () => api.post<{ message: string }>('/notifications/test/telegram').then(r => r.data)
+export const testDiscord   = () => api.post<{ message: string }>('/notifications/test/discord').then(r => r.data)
+export const testPushover  = () => api.post<{ message: string }>('/notifications/test/pushover').then(r => r.data)
+export const testEmail     = () => api.post<{ message: string }>('/notifications/test/email').then(r => r.data)
 
 export const getNotificationStatus = () =>
   api.get('/notifications/status').then(r => r.data)

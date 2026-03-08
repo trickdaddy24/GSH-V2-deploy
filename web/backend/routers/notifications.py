@@ -113,6 +113,75 @@ def test_telegram():
     return {"message": "Telegram test message sent"}
 
 
+@router.post("/test/discord", response_model=MessageResponse, dependencies=[Depends(verify_api_key)])
+def test_discord():
+    cfg = CONFIG["NOTIFICATIONS"]["DISCORD"]
+    if not cfg["enabled"]:
+        raise HTTPException(status_code=400, detail="Discord is disabled")
+    if not cfg.get("webhook_url"):
+        raise HTTPException(status_code=400, detail="Missing Discord webhook URL")
+    try:
+        r = requests.post(
+            cfg["webhook_url"],
+            json={"content": "🧪 Test from GuardianStreams Web"},
+            timeout=10,
+        )
+        if r.status_code not in (200, 204):
+            raise HTTPException(status_code=502, detail=f"Discord error {r.status_code}: {r.text[:200]}")
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return {"message": "Discord test message sent"}
+
+
+@router.post("/test/pushover", response_model=MessageResponse, dependencies=[Depends(verify_api_key)])
+def test_pushover():
+    cfg = CONFIG["NOTIFICATIONS"]["PUSHOVER"]
+    if not cfg["enabled"]:
+        raise HTTPException(status_code=400, detail="Pushover is disabled")
+    if not cfg.get("api_token") or not cfg.get("user_key"):
+        raise HTTPException(status_code=400, detail="Missing Pushover credentials")
+    try:
+        r = requests.post(
+            "https://api.pushover.net/1/messages.json",
+            data={
+                "token":   cfg["api_token"],
+                "user":    cfg["user_key"],
+                "title":   "GuardianStreams Test",
+                "message": "🧪 Test from GuardianStreams Web",
+            },
+            timeout=10,
+        )
+        body = r.json()
+        if r.status_code != 200 or body.get("status") != 1:
+            raise HTTPException(status_code=502, detail=f"Pushover error: {body.get('errors', r.text)}")
+    except requests.RequestException as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return {"message": "Pushover test message sent"}
+
+
+@router.post("/test/email", response_model=MessageResponse, dependencies=[Depends(verify_api_key)])
+def test_email():
+    import smtplib
+    from email.mime.text import MIMEText
+    cfg = CONFIG["NOTIFICATIONS"]["EMAIL"]
+    if not cfg["enabled"]:
+        raise HTTPException(status_code=400, detail="Email is disabled")
+    if not cfg.get("username") or not cfg.get("password"):
+        raise HTTPException(status_code=400, detail="Missing email credentials")
+    try:
+        msg = MIMEText("🧪 Test from GuardianStreams Web")
+        msg["Subject"] = "GuardianStreams — Test Notification"
+        msg["From"]    = f"{cfg.get('from_name', 'GSH')} <{cfg.get('from_email') or cfg['username']}>"
+        msg["To"]      = cfg["username"]
+        with smtplib.SMTP(cfg.get("smtp_server", "smtp.gmail.com"), int(cfg.get("smtp_port", 587))) as smtp:
+            smtp.starttls()
+            smtp.login(cfg["username"], cfg["password"])
+            smtp.send_message(msg)
+    except Exception as e:
+        raise HTTPException(status_code=502, detail=str(e))
+    return {"message": f"Test email sent to {cfg['username']}"}
+
+
 @router.get("/status", dependencies=[Depends(verify_api_key)])
 def notification_status():
     return {

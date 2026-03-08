@@ -4,6 +4,21 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.2.5] - 2026-03-08
+
+### Added
+- **Test buttons** on every notification service card in Settings
+  - Telegram — sends `🧪 Test from GuardianStreams Web` via Bot API
+  - Discord — posts test message to webhook
+  - Pushover — sends test push notification
+  - Email — sends test email to the configured username address via SMTP
+  - Buttons disabled when service is toggled off; success/failure shown as toast
+- `POST /api/notifications/test/discord` endpoint
+- `POST /api/notifications/test/pushover` endpoint
+- `POST /api/notifications/test/email` endpoint
+
+---
+
 ## [2.2.4] - 2026-03-08
 
 ### Added
