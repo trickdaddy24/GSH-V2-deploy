@@ -12,12 +12,15 @@ GuardianStreams Billing System is a self-contained CLI application backed by a l
 
 ## Features
 
-- **Customer Management** — Add, view, edit, and search subscribers with color-coded status display
+- **Dashboard** — Live summary of subscriber counts, revenue, delinquent accounts, upcoming dues, and recent payments shown on startup
+- **Customer Management** — Add, view, edit, search by name, and soft-deactivate or permanently delete subscribers with color-coded status display
 - **Flexible Sorting & Filtering** — Sort by ID, name, due date, price, or status; filter by status, package, or upcoming due dates
 - **Payment Recording** — Log paid, failed, or grace-period payments with automatic due date advancement
 - **Status Engine** — Automatically resolves display status (`initial`, `paid`, `pending`, `delinquent`, `active`) based on payment history and account age
 - **Risk Prediction** — Two AI-style risk models flag customers likely to miss payments, with scoring based on days until due, late payment history, and grace period usage
 - **Payment Reminders** — Send personalized reminders via Email (HTML + plain text), Telegram, Discord, and Pushover with rate limiting and retry logic
+- **Bulk Due Date Update** — Advance due dates across all or filtered accounts by 30/60/90/custom days with preview before applying
+- **Database Backup** — One-click timestamped copy of the SQLite database
 - **Import / Export** — Bulk import and export subscriber data via JSON
 - **Multi-Channel Notifications** — System events (new users, payments, errors) broadcast to all enabled notification channels
 - **Schema Migrations** — Database columns are added automatically on startup if missing; safe to run against older databases
@@ -48,36 +51,53 @@ python subscription_manager.py
 You will be presented with the main menu:
 
 ```
-GuardianStreams Billing System  v2.0.0
+GuardianStreams Billing System  v2.1.0
 
- 1.  Add user
- 2.  View all users
- 3.  View users (filtered)
- 4.  Export to JSON
- 5.  View customer subscription
- 6.  Edit customer info
- 7.  Import from JSON
- 8.  Record payment
- 9.  AI: Predict risky customers
-10.  AI: Enhanced Predictive Billing Assistant
-11.  Test Telegram configuration
+ 1.  Dashboard
+ 2.  Add user
+ 3.  View all users
+ 4.  View users (filtered)
+ 5.  Search customer by name
+ 6.  View customer subscription
+ 7.  Edit customer info
+ 8.  Deactivate / delete customer
+ 9.  Export to JSON
+10.  Import from JSON
+11.  Record payment
+12.  AI: Predict risky customers
+13.  AI: Enhanced Predictive Billing Assistant
+14.  Bulk update due dates
+15.  Database backup
+16.  Test Telegram configuration
  0.  Exit
 ```
 
 ### Common Workflows
 
 **Add a new subscriber**
-Select `1`, enter username, optional email/phone, choose a package, and set a due date.
+Select `2`, enter username, optional email/phone, choose a package, and set a due date.
+
+**Search for a customer**
+Select `5` and type part of the username — returns all partial matches.
 
 **Record a payment**
-Select `8`, enter the account ID digits (e.g. `001`), confirm the amount, choose paid/failed/grace period, then pick a new due date if paid.
+Select `11`, enter the account ID digits (e.g. `001`), confirm the amount, choose paid/failed/grace period, then pick a new due date if paid.
+
+**Deactivate or delete a customer**
+Select `8`. Choose soft deactivate (hidden from views, data preserved) or permanent delete (requires typing `DELETE` to confirm). Inactive accounts can also be reactivated.
 
 **Find at-risk customers**
-- Option `9` — General model: flags anyone due within 7 days
-- Option `10` — Enhanced model: focused 4-day window, prompts to send reminders immediately
+- Option `12` — General model: flags anyone due within 7 days
+- Option `13` — Enhanced model: focused 4-day window, prompts to send reminders immediately
+
+**Bulk advance due dates**
+Select `14`, filter by all/status/package, choose how many days to advance, preview the changes, then confirm.
+
+**Back up the database**
+Select `15` — creates a timestamped copy of the `.db` file in the current directory.
 
 **Import existing data**
-Select `7` and provide a path to a JSON file matching the export format (see [Data Directory](#data-directory)).
+Select `10` and provide a path to a JSON file matching the export format (see [Data Directory](#data-directory)).
 
 ---
 
@@ -156,6 +176,7 @@ The following files are created automatically in the working directory:
 
 | Version | Date | Summary |
 |---|---|---|
+| 2.1.0 | 2026-03-08 | Dashboard, search, deactivate/delete, bulk due dates, DB backup, .gitignore, .env.example |
 | 2.0.0 | 2026-03-08 | Modular risk helpers, N+1-free SQL, named constants, HTML email, DB index |
 | 1.0.2 | — | HTML email, retry logic, grace period, enhanced risk predictor |
 | 1.0.1 | — | Payment history, due date advancement, Discord/Telegram |

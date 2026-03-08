@@ -4,6 +4,30 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.1.0] - 2026-03-08
+
+### Added
+- `show_dashboard()` — live summary screen showing subscriber counts, revenue, status breakdown, delinquent accounts, upcoming dues, and recent payments; displayed automatically on startup and available as menu option 1
+- `search_customer()` — partial username search returning all matching accounts including inactive ones
+- `deactivate_customer()` — soft deactivate (sets `is_active = 0`, hides from all views, data preserved), reactivate, or hard delete with `DELETE` confirmation prompt
+- `bulk_update_due_dates()` — advance due dates across all or filtered accounts by 30/60/90/custom days; shows preview before applying
+- `backup_database()` — copies the SQLite `.db` file to a timestamped backup in the working directory
+- `.gitignore` — excludes `.env`, `*.db`, `*_backup_*.db`, `*.log`, generated JSON reports, `__pycache__`, `venv/`
+- `.env.example` — template with all supported environment variables and inline setup instructions
+
+### Changed
+- `is_active INTEGER DEFAULT 1` column added to `subscriptions` table; `init_db()` migrates existing databases automatically
+- `_fetch_subscriptions()` accepts `include_inactive` parameter; defaults to active-only
+- `get_customer_data()` filters to active subscribers only (`WHERE is_active = 1`)
+- `record_payment()` and `edit_customer()` reject inactive accounts
+- `export_to_json()` exports active subscribers only
+- `view_subscription_by_id()` shows active/inactive label and works for both states
+- `add_user()` and `import_from_json()` explicitly set `is_active = 1` on insert
+- Menu expanded from 11 to 16 options
+- Version bumped to `2.1.0`
+
+---
+
 ## [2.0.0] - 2026-03-08
 
 ### Added

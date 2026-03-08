@@ -4,7 +4,7 @@ GuardianStreams Subscription Manager
 Billing management CLI for streaming service subscriptions.
 """
 
-__version__ = "2.0.0"
+__version__ = "2.1.0"
 
 # ============================================================
 # IMPORTS
@@ -13,6 +13,7 @@ import json
 import logging
 import os
 import re
+import shutil
 import smtplib
 import sqlite3
 import time
@@ -141,7 +142,7 @@ _email_logger.addHandler(_email_handler)
 # ============================================================
 
 def init_db() -> None:
-    """Create tables and run schema migrations if needed."""
+    """Create tables, indexes, and run schema migrations if needed."""
     try:
         with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
             c = conn.cursor()
@@ -157,7 +158,8 @@ def init_db() -> None:
                     status TEXT NOT NULL CHECK(status IN
                         ('initial','paid','delinquent','pending','active')),
                     grace_period_used INTEGER DEFAULT 0,
-                    creation_date TEXT
+                    creation_date TEXT,
+                    is_active INTEGER DEFAULT 1
                 )
             """)
             c.execute("""
@@ -182,6 +184,10 @@ def init_db() -> None:
             if "grace_period_used" not in existing:
                 c.execute(
                     "ALTER TABLE subscriptions ADD COLUMN grace_period_used INTEGER DEFAULT 0"
+                )
+            if "is_active" not in existing:
+                c.execute(
+                    "ALTER TABLE subscriptions ADD COLUMN is_active INTEGER DEFAULT 1"
                 )
             conn.commit()
             logging.info("Database ready")
@@ -241,14 +247,16 @@ def determine_status(subscription: Dict, latest_payment: Optional[Dict]) -> str:
     return stored if stored == "active" else "pending"
 
 
-def _fetch_subscriptions(cursor) -> List[Dict]:
+def _fetch_subscriptions(cursor, include_inactive: bool = False) -> List[Dict]:
     """
-    Fetch all subscriptions with resolved display status in a single query.
+    Fetch subscriptions with resolved display status in a single query.
     Uses a window function to get each customer's latest payment without N+1 queries.
+    Set include_inactive=True to include deactivated accounts.
     """
-    cursor.execute("""
+    where = "" if include_inactive else "WHERE s.is_active = 1"
+    cursor.execute(f"""
         SELECT s.id, s.username, s.email, s.phone, s.package, s.price,
-               s.due_date, s.status, s.creation_date,
+               s.due_date, s.status, s.creation_date, s.is_active,
                lp.payment_date, lp.status AS latest_payment_status
         FROM subscriptions s
         LEFT JOIN (
@@ -258,15 +266,16 @@ def _fetch_subscriptions(cursor) -> List[Dict]:
                    ) AS rn
             FROM billing_history
         ) lp ON lp.subscription_id = s.id AND lp.rn = 1
+        {where}
     """)
     result = []
     for row in cursor.fetchall():
         sub = {
             "id": row[0], "username": row[1], "email": row[2], "phone": row[3],
             "package": row[4], "price": row[5], "due_date": row[6],
-            "status": row[7], "creation_date": row[8],
+            "status": row[7], "creation_date": row[8], "is_active": row[9],
         }
-        latest = {"payment_date": row[9], "status": row[10]} if row[9] else None
+        latest = {"payment_date": row[10], "status": row[11]} if row[10] else None
         sub["display_status"] = determine_status(sub, latest)
         result.append(sub)
     return result
@@ -485,6 +494,111 @@ def test_telegram_config() -> bool:
 
 
 # ============================================================
+# DASHBOARD
+# ============================================================
+
+def show_dashboard() -> None:
+    """Display a summary of subscriber counts, revenue, and recent activity."""
+    try:
+        with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
+            c = conn.cursor()
+
+            # Total active subscribers
+            c.execute("SELECT COUNT(*) FROM subscriptions WHERE is_active = 1")
+            total_active = c.fetchone()[0]
+
+            c.execute("SELECT COUNT(*) FROM subscriptions WHERE is_active = 0")
+            total_inactive = c.fetchone()[0]
+
+            # Monthly revenue (sum of prices for active subscribers)
+            c.execute("SELECT COALESCE(SUM(price), 0) FROM subscriptions WHERE is_active = 1")
+            monthly_revenue = c.fetchone()[0]
+
+            # Status breakdown (using stored status for speed)
+            c.execute("""
+                SELECT status, COUNT(*)
+                FROM subscriptions
+                WHERE is_active = 1
+                GROUP BY status
+            """)
+            status_counts = dict(c.fetchall())
+
+            # Accounts due in next 7 days
+            subs = _fetch_subscriptions(c)
+            now = datetime.now()
+            cutoff = now + timedelta(days=7)
+            due_soon = []
+            delinquent_list = []
+            for s in subs:
+                try:
+                    due = datetime.strptime(s["due_date"], DATE_FORMAT)
+                    if now <= due <= cutoff:
+                        due_soon.append(s)
+                except ValueError:
+                    pass
+                if s["display_status"] == "delinquent":
+                    delinquent_list.append(s)
+
+            # Recent payments (last 5)
+            c.execute("""
+                SELECT b.payment_date, b.amount, b.status, s.username, s.id
+                FROM billing_history b
+                JOIN subscriptions s ON s.id = b.subscription_id
+                ORDER BY b.id DESC LIMIT 5
+            """)
+            recent_payments = c.fetchall()
+
+        print(f"\n{Fore.CYAN}{Style.BRIGHT}{'=' * 52}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}{Style.BRIGHT}  GuardianStreams Dashboard  —  {datetime.now().strftime('%m-%d-%Y %H:%M')}{Style.RESET_ALL}")
+        print(f"{Fore.CYAN}{Style.BRIGHT}{'=' * 52}{Style.RESET_ALL}")
+
+        # Subscriber summary
+        print(f"\n{Fore.CYAN}Subscribers{Style.RESET_ALL}")
+        print(f"  {Fore.WHITE}Active   : {Fore.GREEN}{total_active}{Style.RESET_ALL}")
+        if total_inactive:
+            print(f"  {Fore.WHITE}Inactive : {Fore.YELLOW}{total_inactive}{Style.RESET_ALL}")
+        print(f"  {Fore.WHITE}Monthly Revenue : {Fore.GREEN}${monthly_revenue:,.2f}{Style.RESET_ALL}")
+
+        # Status breakdown
+        print(f"\n{Fore.CYAN}Status Breakdown{Style.RESET_ALL}")
+        for status in ("paid", "active", "pending", "initial", "delinquent"):
+            count = status_counts.get(status, 0)
+            if count:
+                color = STATUS_COLORS.get(status, Fore.WHITE)
+                print(f"  {color}{status.capitalize():<12}: {count}{Style.RESET_ALL}")
+
+        # Delinquent alert
+        if delinquent_list:
+            print(f"\n{Fore.RED}Delinquent Accounts ({len(delinquent_list)}){Style.RESET_ALL}")
+            for s in delinquent_list[:5]:
+                print(f"  {Fore.RED}{s['id']}  {s['username']}  Due: {s['due_date']}{Style.RESET_ALL}")
+            if len(delinquent_list) > 5:
+                print(f"  {Fore.RED}... and {len(delinquent_list) - 5} more{Style.RESET_ALL}")
+
+        # Due soon
+        if due_soon:
+            print(f"\n{Fore.YELLOW}Due in Next 7 Days ({len(due_soon)}){Style.RESET_ALL}")
+            for s in due_soon[:5]:
+                print(f"  {Fore.YELLOW}{s['id']}  {s['username']}  Due: {s['due_date']}{Style.RESET_ALL}")
+            if len(due_soon) > 5:
+                print(f"  {Fore.YELLOW}... and {len(due_soon) - 5} more{Style.RESET_ALL}")
+
+        # Recent payments
+        if recent_payments:
+            print(f"\n{Fore.CYAN}Recent Payments{Style.RESET_ALL}")
+            for pdate, amount, pstatus, uname, uid in recent_payments:
+                color = Fore.GREEN if pstatus == "paid" else Fore.RED if pstatus == "failed" else Fore.YELLOW
+                print(f"  {Fore.WHITE}{pdate}  {uid}  {uname:<20}  ${amount:.2f}  {color}{pstatus}{Style.RESET_ALL}")
+
+        print(f"\n{Fore.CYAN}{Style.BRIGHT}{'=' * 52}{Style.RESET_ALL}\n")
+        logging.info("Dashboard viewed")
+
+    except sqlite3.Error as e:
+        logging.error(f"Dashboard error: {e}")
+        print(f"{Fore.RED}Could not load dashboard.{Style.RESET_ALL}")
+
+
+# ============================================================
 # CUSTOMER MANAGEMENT
 # ============================================================
 
@@ -492,12 +606,13 @@ def _print_subscription_rows(subs: List[Dict]) -> None:
     """Print a list of subscription dicts with color-coded status."""
     for s in subs:
         color = STATUS_COLORS.get(s["display_status"], Fore.WHITE)
+        inactive_tag = f"  {Fore.RED}[INACTIVE]{Style.RESET_ALL}" if not s.get("is_active", 1) else ""
         print(
             f"{Fore.WHITE}ID: {s['id']}  User: {s['username']}  "
             f"Email: {s['email'] or 'N/A'}  Phone: {s['phone'] or 'N/A'}  "
             f"Pkg: {s['package']}  Price: ${s['price']}  "
             f"Due: {s['due_date']}  "
-            f"Status: {color}{s['display_status']}{Style.RESET_ALL}"
+            f"Status: {color}{s['display_status']}{Style.RESET_ALL}{inactive_tag}"
         )
 
 
@@ -566,8 +681,8 @@ def add_user() -> None:
             with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
                 conn.execute(
                     "INSERT INTO subscriptions "
-                    "(id, username, email, phone, package, price, due_date, status, creation_date) "
-                    "VALUES (?, ?, ?, ?, ?, ?, ?, 'initial', ?)",
+                    "(id, username, email, phone, package, price, due_date, status, creation_date, is_active) "
+                    "VALUES (?, ?, ?, ?, ?, ?, ?, 'initial', ?, 1)",
                     (acc_id, username, email or None, phone or None, pkg_name, pkg_price, due_str, today),
                 )
                 conn.commit()
@@ -578,9 +693,7 @@ def add_user() -> None:
             return
 
         print(f"{Fore.GREEN}User added. Account ID: {acc_id}{Style.RESET_ALL}")
-        logging.info(
-            f"Added {acc_id}: {username} | {pkg_name} ${pkg_price:.2f} | due {due_str}"
-        )
+        logging.info(f"Added {acc_id}: {username} | {pkg_name} ${pkg_price:.2f} | due {due_str}")
         notify_all(
             f"✅ New user added\nID: {acc_id}\nName: {username}\n"
             f"Package: {pkg_name}\nPrice: ${pkg_price:.2f}\nDue: {due_str}\nStatus: initial"
@@ -592,7 +705,7 @@ def add_user() -> None:
 
 
 def view_users() -> None:
-    """Display all customers with a sort option."""
+    """Display all active customers with a sort option."""
     try:
         with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
             subs = _fetch_subscriptions(conn.cursor())
@@ -703,6 +816,58 @@ def view_users_with_filters() -> None:
         print(f"{Fore.RED}Database error.{Style.RESET_ALL}")
 
 
+def search_customer() -> None:
+    """Search for customers by partial username match."""
+    print(f"{Fore.YELLOW}Search name (partial match): {Style.RESET_ALL}", end="")
+    query = input().strip()
+    if not query:
+        print(f"{Fore.MAGENTA}Search term cannot be empty.{Style.RESET_ALL}")
+        return
+
+    try:
+        with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
+            c = conn.cursor()
+            c.execute("""
+                SELECT s.id, s.username, s.email, s.phone, s.package, s.price,
+                       s.due_date, s.status, s.creation_date, s.is_active,
+                       lp.payment_date, lp.status AS latest_payment_status
+                FROM subscriptions s
+                LEFT JOIN (
+                    SELECT subscription_id, payment_date, status,
+                           ROW_NUMBER() OVER (
+                               PARTITION BY subscription_id ORDER BY payment_date DESC
+                           ) AS rn
+                    FROM billing_history
+                ) lp ON lp.subscription_id = s.id AND lp.rn = 1
+                WHERE LOWER(s.username) LIKE ?
+                ORDER BY s.username COLLATE NOCASE
+            """, (f"%{query.lower()}%",))
+            rows = c.fetchall()
+
+        if not rows:
+            print(f"{Fore.MAGENTA}No customers found matching '{query}'.{Style.RESET_ALL}")
+            return
+
+        results = []
+        for row in rows:
+            sub = {
+                "id": row[0], "username": row[1], "email": row[2], "phone": row[3],
+                "package": row[4], "price": row[5], "due_date": row[6],
+                "status": row[7], "creation_date": row[8], "is_active": row[9],
+            }
+            latest = {"payment_date": row[10], "status": row[11]} if row[10] else None
+            sub["display_status"] = determine_status(sub, latest)
+            results.append(sub)
+
+        print(f"\n{Fore.CYAN}Found {len(results)} result(s) for '{query}':{Style.RESET_ALL}")
+        _print_subscription_rows(results)
+        logging.info(f"Search '{query}' returned {len(results)} result(s)")
+
+    except sqlite3.Error as e:
+        logging.error(f"DB error searching customers: {e}")
+        print(f"{Fore.RED}Database error.{Style.RESET_ALL}")
+
+
 def view_subscription_by_id() -> None:
     """Display full details and payment history for a single account."""
     print(f"{Fore.YELLOW}Account ID digits (e.g. 001): {Style.RESET_ALL}", end="")
@@ -712,8 +877,8 @@ def view_subscription_by_id() -> None:
         with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
             c = conn.cursor()
             c.execute(
-                "SELECT id, username, email, phone, package, price, due_date, status, creation_date "
-                "FROM subscriptions WHERE id = ?",
+                "SELECT id, username, email, phone, package, price, due_date, status, "
+                "creation_date, is_active FROM subscriptions WHERE id = ?",
                 (acc_id,),
             )
             row = c.fetchone()
@@ -726,6 +891,8 @@ def view_subscription_by_id() -> None:
                 "package": row[4], "price": row[5], "due_date": row[6],
                 "status": row[7], "creation_date": row[8],
             }
+            is_active = row[9]
+
             c.execute(
                 "SELECT payment_date, status FROM billing_history "
                 "WHERE subscription_id = ? ORDER BY payment_date DESC LIMIT 1",
@@ -760,6 +927,8 @@ def view_subscription_by_id() -> None:
         print(f"{Fore.WHITE}Status      : {color}{display}{Style.RESET_ALL}")
         print(f"{Fore.WHITE}Created     : {sub['creation_date'] or 'N/A'}{Style.RESET_ALL}")
         print(f"{Fore.WHITE}Total Paid  : ${total_paid:.2f}{Style.RESET_ALL}")
+        active_label = f"{Fore.GREEN}Active" if is_active else f"{Fore.RED}Inactive"
+        print(f"{Fore.WHITE}Account     : {active_label}{Style.RESET_ALL}")
 
         if payments:
             print(f"\n{Fore.CYAN}Recent Payments:{Style.RESET_ALL}")
@@ -783,12 +952,12 @@ def edit_customer() -> None:
             c = conn.cursor()
             c.execute(
                 "SELECT username, email, phone, due_date, package, price "
-                "FROM subscriptions WHERE id = ?",
+                "FROM subscriptions WHERE id = ? AND is_active = 1",
                 (acc_id,),
             )
             row = c.fetchone()
             if not row:
-                print(f"{Fore.MAGENTA}Account {acc_id} not found.{Style.RESET_ALL}")
+                print(f"{Fore.MAGENTA}Account {acc_id} not found or is inactive.{Style.RESET_ALL}")
                 return
 
             cur_user, cur_email, cur_phone, cur_due, cur_pkg, cur_price = row
@@ -886,6 +1055,85 @@ def edit_customer() -> None:
         print(f"{Fore.RED}Database error.{Style.RESET_ALL}")
 
 
+def deactivate_customer() -> None:
+    """Soft-deactivate or permanently delete a customer account."""
+    print(f"{Fore.YELLOW}Account ID digits (e.g. 001): {Style.RESET_ALL}", end="")
+    acc_id = f"{ACCOUNT_PREFIX}{input().strip().zfill(ACCOUNT_PADDING)}"
+
+    try:
+        with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
+            c = conn.cursor()
+            c.execute(
+                "SELECT username, package, price, due_date, is_active "
+                "FROM subscriptions WHERE id = ?",
+                (acc_id,),
+            )
+            row = c.fetchone()
+            if not row:
+                print(f"{Fore.MAGENTA}Account {acc_id} not found.{Style.RESET_ALL}")
+                return
+
+            username, package, price, due_date, is_active = row
+
+            print(f"\n{Fore.CYAN}Account: {acc_id}  —  {username}{Style.RESET_ALL}")
+            print(f"{Fore.WHITE}  Package : {package}  ${price}/mo{Style.RESET_ALL}")
+            print(f"{Fore.WHITE}  Due     : {due_date}{Style.RESET_ALL}")
+            status_label = f"{Fore.GREEN}Active" if is_active else f"{Fore.RED}Inactive"
+            print(f"{Fore.WHITE}  Status  : {status_label}{Style.RESET_ALL}\n")
+
+            if is_active:
+                print(f"{Fore.WHITE}  1. Deactivate (soft — keeps all data, hides from views){Style.RESET_ALL}")
+                print(f"{Fore.WHITE}  2. Permanently delete (removes account and payment history){Style.RESET_ALL}")
+                print(f"{Fore.WHITE}  0. Cancel{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}Choice: {Style.RESET_ALL}", end="")
+                choice = input().strip()
+            else:
+                print(f"{Fore.WHITE}  1. Reactivate account{Style.RESET_ALL}")
+                print(f"{Fore.WHITE}  2. Permanently delete (removes account and payment history){Style.RESET_ALL}")
+                print(f"{Fore.WHITE}  0. Cancel{Style.RESET_ALL}")
+                print(f"{Fore.YELLOW}Choice: {Style.RESET_ALL}", end="")
+                choice = input().strip()
+
+            if choice == "0":
+                print(f"{Fore.MAGENTA}Cancelled.{Style.RESET_ALL}")
+                return
+
+            elif choice == "1":
+                new_state = 0 if is_active else 1
+                action = "Deactivated" if is_active else "Reactivated"
+                c.execute(
+                    "UPDATE subscriptions SET is_active = ? WHERE id = ?",
+                    (new_state, acc_id),
+                )
+                conn.commit()
+                color = Fore.YELLOW if new_state == 0 else Fore.GREEN
+                print(f"{color}{action} account {acc_id} ({username}).{Style.RESET_ALL}")
+                logging.info(f"{action} {acc_id}: {username}")
+                notify_all(f"{'⚠️' if new_state == 0 else '✅'} Account {action.lower()}: {acc_id} ({username})")
+
+            elif choice == "2":
+                print(f"\n{Fore.RED}This will permanently delete {acc_id} ({username}) "
+                      f"and all payment history.{Style.RESET_ALL}")
+                print(f"{Fore.RED}Type DELETE to confirm: {Style.RESET_ALL}", end="")
+                confirm = input().strip()
+                if confirm != "DELETE":
+                    print(f"{Fore.MAGENTA}Cancelled — confirmation did not match.{Style.RESET_ALL}")
+                    return
+                c.execute("DELETE FROM billing_history WHERE subscription_id = ?", (acc_id,))
+                c.execute("DELETE FROM subscriptions WHERE id = ?", (acc_id,))
+                conn.commit()
+                print(f"{Fore.RED}Account {acc_id} ({username}) permanently deleted.{Style.RESET_ALL}")
+                logging.info(f"Hard deleted {acc_id}: {username}")
+                notify_all(f"🗑️ Account permanently deleted: {acc_id} ({username})")
+
+            else:
+                print(f"{Fore.MAGENTA}Invalid choice.{Style.RESET_ALL}")
+
+    except sqlite3.Error as e:
+        logging.error(f"DB error in deactivate_customer {acc_id}: {e}")
+        print(f"{Fore.RED}Database error.{Style.RESET_ALL}")
+
+
 # ============================================================
 # PAYMENT SYSTEM
 # ============================================================
@@ -921,12 +1169,13 @@ def record_payment() -> None:
         with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
             c = conn.cursor()
             c.execute(
-                "SELECT username, price, due_date FROM subscriptions WHERE id = ?", (acc_id,)
+                "SELECT username, price, due_date FROM subscriptions "
+                "WHERE id = ? AND is_active = 1", (acc_id,)
             )
             row = c.fetchone()
             if not row:
-                print(f"{Fore.MAGENTA}Account {acc_id} not found.{Style.RESET_ALL}")
-                notify_all(f"⚠️ Payment failed: account {acc_id} not found")
+                print(f"{Fore.MAGENTA}Account {acc_id} not found or is inactive.{Style.RESET_ALL}")
+                notify_all(f"⚠️ Payment failed: account {acc_id} not found or inactive")
                 return
 
             username, price, current_due_str = row
@@ -1015,7 +1264,6 @@ def record_payment() -> None:
                     f"⚠️ Grace period activated\nAccount: {acc_id}\n"
                     f"Name: {username}\nAmount Due: ${amount:.2f}\nStatus: pending"
                 )
-            # status == "failed": payment logged, no subscription update needed
 
     except sqlite3.Error as e:
         logging.error(f"DB error recording payment for {acc_id}: {e}")
@@ -1027,13 +1275,13 @@ def record_payment() -> None:
 # ============================================================
 
 def export_to_json() -> None:
-    """Export all subscriptions to GuardianStreams_export.json."""
+    """Export all active subscriptions to GuardianStreams_export.json."""
     try:
         with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
             c = conn.cursor()
             c.execute(
                 "SELECT id, username, email, phone, package, price, due_date, status, creation_date "
-                "FROM subscriptions"
+                "FROM subscriptions WHERE is_active = 1"
             )
             rows = c.fetchall()
 
@@ -1102,8 +1350,8 @@ def import_from_json() -> None:
 
                     c.execute(
                         "INSERT OR REPLACE INTO subscriptions "
-                        "(id, username, email, phone, package, price, due_date, status, creation_date) "
-                        "VALUES (?, ?, ?, ?, ?, ?, ?, 'initial', ?)",
+                        "(id, username, email, phone, package, price, due_date, status, creation_date, is_active) "
+                        "VALUES (?, ?, ?, ?, ?, ?, ?, 'initial', ?, 1)",
                         (acc_id, username, email, phone, plan, price, due_date, creation_date),
                     )
                     count += 1
@@ -1128,7 +1376,7 @@ def import_from_json() -> None:
 
 def get_customer_data() -> List[Dict]:
     """
-    Fetch all customers with payment stats in a single query.
+    Fetch all active customers with payment stats in a single query.
     Returns late payment counts and latest payment info via JOINs — no N+1.
     """
     try:
@@ -1155,6 +1403,7 @@ def get_customer_data() -> List[Dict]:
                     WHERE status IN ('failed', 'grace_period')
                     GROUP BY subscription_id
                 ) late ON late.subscription_id = s.id
+                WHERE s.is_active = 1
             """)
             rows = c.fetchall()
 
@@ -1299,7 +1548,6 @@ def enhanced_predict_risky_customers() -> None:
             continue
 
         score, reasons = 0, []
-
         score += max(5 - days, 0)
         reasons.append(f"Due in {days} day(s)")
 
@@ -1499,6 +1747,130 @@ def send_customer_reminders(predictions: List[Dict]) -> None:
 
 
 # ============================================================
+# BULK OPERATIONS
+# ============================================================
+
+def bulk_update_due_dates() -> None:
+    """Advance due dates in bulk for a filtered set of active subscribers."""
+    print(f"\n{Fore.CYAN}Bulk Update Due Dates{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}Filter accounts to update:{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}  1. All active subscribers{Style.RESET_ALL}")
+    print(f"{Fore.WHITE}  2. By status (paid / pending / delinquent){Style.RESET_ALL}")
+    print(f"{Fore.WHITE}  3. By package{Style.RESET_ALL}")
+    print(f"{Fore.YELLOW}Choice (1-3): {Style.RESET_ALL}", end="")
+    flt = input().strip()
+
+    try:
+        with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
+            subs = _fetch_subscriptions(conn.cursor())
+
+        if flt == "2":
+            print(f"{Fore.YELLOW}Status (paid/pending/delinquent): {Style.RESET_ALL}", end="")
+            status_filter = input().strip().lower()
+            subs = [s for s in subs if s["display_status"] == status_filter]
+        elif flt == "3":
+            print(f"\n{Fore.CYAN}Packages:{Style.RESET_ALL}")
+            for k, (name, _) in CONFIG["PACKAGES"].items():
+                print(f"{Fore.WHITE}  {k}: {name}{Style.RESET_ALL}")
+            print(f"{Fore.YELLOW}Package name: {Style.RESET_ALL}", end="")
+            pkg = input().strip()
+            subs = [s for s in subs if s["package"] == pkg]
+
+        if not subs:
+            print(f"{Fore.MAGENTA}No accounts match that filter.{Style.RESET_ALL}")
+            return
+
+        print(f"\n{Fore.CYAN}Advance due dates by:{Style.RESET_ALL}")
+        print(f"{Fore.WHITE}  1. +30 days{Style.RESET_ALL}")
+        print(f"{Fore.WHITE}  2. +60 days{Style.RESET_ALL}")
+        print(f"{Fore.WHITE}  3. +90 days{Style.RESET_ALL}")
+        print(f"{Fore.WHITE}  4. Custom number of days{Style.RESET_ALL}")
+        print(f"{Fore.YELLOW}Choice (1-4): {Style.RESET_ALL}", end="")
+        adv = input().strip()
+
+        day_map = {"1": 30, "2": 60, "3": 90}
+        if adv in day_map:
+            advance_days = day_map[adv]
+        elif adv == "4":
+            print(f"{Fore.YELLOW}Number of days: {Style.RESET_ALL}", end="")
+            try:
+                advance_days = int(input().strip())
+                if advance_days <= 0:
+                    raise ValueError
+            except ValueError:
+                print(f"{Fore.MAGENTA}Must be a positive integer.{Style.RESET_ALL}")
+                return
+        else:
+            print(f"{Fore.MAGENTA}Invalid choice.{Style.RESET_ALL}")
+            return
+
+        # Preview
+        print(f"\n{Fore.CYAN}Preview — {len(subs)} account(s) will be updated (+{advance_days} days):{Style.RESET_ALL}")
+        for s in subs[:10]:
+            try:
+                old_due = datetime.strptime(s["due_date"], DATE_FORMAT)
+                new_due = (old_due + timedelta(days=advance_days)).strftime(DATE_FORMAT)
+                print(f"  {Fore.WHITE}{s['id']}  {s['username']:<20}  {s['due_date']} → {new_due}{Style.RESET_ALL}")
+            except ValueError:
+                pass
+        if len(subs) > 10:
+            print(f"  {Fore.WHITE}... and {len(subs) - 10} more{Style.RESET_ALL}")
+
+        print(f"\n{Fore.YELLOW}Confirm bulk update? (y/n): {Style.RESET_ALL}", end="")
+        if input().strip().lower() != "y":
+            print(f"{Fore.MAGENTA}Cancelled.{Style.RESET_ALL}")
+            return
+
+        updated = 0
+        with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
+            c = conn.cursor()
+            for s in subs:
+                try:
+                    old_due = datetime.strptime(s["due_date"], DATE_FORMAT)
+                    new_due_str = (old_due + timedelta(days=advance_days)).strftime(DATE_FORMAT)
+                    c.execute(
+                        "UPDATE subscriptions SET due_date = ? WHERE id = ?",
+                        (new_due_str, s["id"]),
+                    )
+                    updated += 1
+                except ValueError:
+                    logging.warning(f"Skipping {s['id']}: invalid due_date")
+            conn.commit()
+
+        print(f"{Fore.GREEN}Updated {updated} account(s) (+{advance_days} days).{Style.RESET_ALL}")
+        logging.info(f"Bulk due date update: {updated} accounts advanced by {advance_days} days")
+        notify_all(f"📅 Bulk due date update: {updated} accounts advanced by {advance_days} days")
+
+    except sqlite3.Error as e:
+        logging.error(f"DB error in bulk_update_due_dates: {e}")
+        print(f"{Fore.RED}Database error.{Style.RESET_ALL}")
+
+
+# ============================================================
+# DATABASE BACKUP
+# ============================================================
+
+def backup_database() -> None:
+    """Copy the SQLite database to a timestamped backup file."""
+    db = CONFIG["DB_NAME"]
+    if not os.path.exists(db):
+        print(f"{Fore.MAGENTA}Database file not found: {db}{Style.RESET_ALL}")
+        return
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    backup_name = f"{db.replace('.db', '')}_backup_{timestamp}.db"
+
+    try:
+        shutil.copy2(db, backup_name)
+        size_kb = os.path.getsize(backup_name) / 1024
+        print(f"{Fore.GREEN}Backup saved: {backup_name}  ({size_kb:.1f} KB){Style.RESET_ALL}")
+        logging.info(f"Database backup created: {backup_name}")
+    except OSError as e:
+        logging.error(f"Backup failed: {e}")
+        print(f"{Fore.RED}Backup failed: {e}{Style.RESET_ALL}")
+
+
+# ============================================================
 # WEB API STUBS
 # ============================================================
 
@@ -1522,8 +1894,8 @@ def add_user_web(
         with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
             conn.execute(
                 "INSERT INTO subscriptions "
-                "(id, username, email, phone, package, price, due_date, status, creation_date) "
-                "VALUES (?, ?, ?, ?, ?, ?, ?, 'initial', ?)",
+                "(id, username, email, phone, package, price, due_date, status, creation_date, is_active) "
+                "VALUES (?, ?, ?, ?, ?, ?, ?, 'initial', ?, 1)",
                 (acc_id, username, email or None, phone or None, pkg_name, price, due_date, today),
             )
             conn.commit()
@@ -1535,13 +1907,13 @@ def add_user_web(
 
 
 def get_all_users() -> List[Dict]:
-    """Return all subscriptions as a list of dicts for web API use."""
+    """Return all active subscriptions as a list of dicts for web API use."""
     try:
         with sqlite3.connect(CONFIG["DB_NAME"]) as conn:
             c = conn.cursor()
             c.execute(
                 "SELECT id, username, email, phone, package, price, due_date, status "
-                "FROM subscriptions"
+                "FROM subscriptions WHERE is_active = 1"
             )
             return [
                 {
@@ -1561,32 +1933,42 @@ def get_all_users() -> List[Dict]:
 
 _MENU = f"""
 {Fore.CYAN}{Style.BRIGHT}GuardianStreams Billing System  v{__version__}{Style.RESET_ALL}
-{Fore.WHITE} 1.  Add user
- 2.  View all users
- 3.  View users (filtered)
- 4.  Export to JSON
- 5.  View customer subscription
- 6.  Edit customer info
- 7.  Import from JSON
- 8.  Record payment
- 9.  AI: Predict risky customers
- 10. AI: Enhanced Predictive Billing Assistant
- 11. Test Telegram configuration
+{Fore.WHITE} 1.  Dashboard
+ 2.  Add user
+ 3.  View all users
+ 4.  View users (filtered)
+ 5.  Search customer by name
+ 6.  View customer subscription
+ 7.  Edit customer info
+ 8.  Deactivate / delete customer
+ 9.  Export to JSON
+10.  Import from JSON
+11.  Record payment
+12.  AI: Predict risky customers
+13.  AI: Enhanced Predictive Billing Assistant
+14.  Bulk update due dates
+15.  Database backup
+16.  Test Telegram configuration
  0.  Exit{Style.RESET_ALL}
 """
 
 _MENU_ACTIONS = {
-    "1": add_user,
-    "2": view_users,
-    "3": view_users_with_filters,
-    "4": export_to_json,
-    "5": view_subscription_by_id,
-    "6": edit_customer,
-    "7": import_from_json,
-    "8": record_payment,
-    "9": predict_risky_customers,
-    "10": enhanced_predict_risky_customers,
-    "11": test_telegram_config,
+    "1":  show_dashboard,
+    "2":  add_user,
+    "3":  view_users,
+    "4":  view_users_with_filters,
+    "5":  search_customer,
+    "6":  view_subscription_by_id,
+    "7":  edit_customer,
+    "8":  deactivate_customer,
+    "9":  export_to_json,
+    "10": import_from_json,
+    "11": record_payment,
+    "12": predict_risky_customers,
+    "13": enhanced_predict_risky_customers,
+    "14": bulk_update_due_dates,
+    "15": backup_database,
+    "16": test_telegram_config,
 }
 
 
@@ -1595,10 +1977,11 @@ def main() -> None:
         init_db()
         logging.info(f"GuardianStreams Subscription Manager v{__version__} started")
         notify_all("🚀 GuardianStreams Billing System started")
+        show_dashboard()
 
         while True:
             print(_MENU)
-            print(f"{Fore.YELLOW}Choice (0-11): {Style.RESET_ALL}", end="")
+            print(f"{Fore.YELLOW}Choice (0-16): {Style.RESET_ALL}", end="")
             choice = input().strip()
             logging.info(f"Menu choice: {choice}")
 
