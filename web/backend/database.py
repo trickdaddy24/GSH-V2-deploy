@@ -25,20 +25,48 @@ def get_db():
 
 
 def migrate_db():
-    """Add any missing columns to existing databases on startup."""
+    """Create tables if missing and add any missing columns on startup."""
     db = get_db()
     try:
         c = db.cursor()
+        c.executescript("""
+            CREATE TABLE IF NOT EXISTS subscriptions (
+                id TEXT PRIMARY KEY,
+                username TEXT NOT NULL,
+                email TEXT,
+                phone TEXT,
+                package_id TEXT NOT NULL,
+                custom_price REAL,
+                due_date TEXT NOT NULL,
+                status TEXT DEFAULT 'initial',
+                creation_date TEXT,
+                grace_period_used INTEGER DEFAULT 0,
+                is_active INTEGER DEFAULT 1
+            );
+            CREATE TABLE IF NOT EXISTS billing_history (
+                id INTEGER PRIMARY KEY AUTOINCREMENT,
+                subscription_id TEXT NOT NULL,
+                amount REAL NOT NULL,
+                status TEXT NOT NULL,
+                date TEXT NOT NULL,
+                new_due_date TEXT,
+                FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
+            );
+            CREATE INDEX IF NOT EXISTS idx_billing_sub
+                ON billing_history(subscription_id);
+        """)
+        db.commit()
+
+        # Add columns that may be missing from older databases
         existing = {row[1] for row in c.execute("PRAGMA table_info(subscriptions)")}
-        if "is_active" not in existing:
-            c.execute("ALTER TABLE subscriptions ADD COLUMN is_active INTEGER DEFAULT 1")
-            db.commit()
-        if "creation_date" not in existing:
-            c.execute("ALTER TABLE subscriptions ADD COLUMN creation_date TEXT")
-            db.commit()
-        if "grace_period_used" not in existing:
-            c.execute("ALTER TABLE subscriptions ADD COLUMN grace_period_used INTEGER DEFAULT 0")
-            db.commit()
+        for col, defn in [
+            ("is_active",         "INTEGER DEFAULT 1"),
+            ("creation_date",     "TEXT"),
+            ("grace_period_used", "INTEGER DEFAULT 0"),
+        ]:
+            if col not in existing:
+                c.execute(f"ALTER TABLE subscriptions ADD COLUMN {col} {defn}")
+        db.commit()
     finally:
         db.close()
 
