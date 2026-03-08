@@ -114,9 +114,21 @@ This uses the entry point defined in `pyproject.toml`. The `-e` flag installs in
 
 ### Run the CLI
 
+**Mac / Linux**
 ```bash
+cd GSH
+source venv/bin/activate
+python3 subscription_manager.py
+```
+
+**Windows**
+```powershell
+cd GSH
+venv\Scripts\activate
 python subscription_manager.py
 ```
+
+> If you installed the `gsh` command via `pip install -e .`, you can skip the above and just run `gsh` from anywhere in your terminal.
 
 ### Run the Web Interface
 
