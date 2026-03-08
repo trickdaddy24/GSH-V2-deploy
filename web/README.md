@@ -40,8 +40,8 @@ cp ../../.env.example .env
 
 # Run the API server
 python main.py
-# → http://localhost:8000
-# → http://localhost:8000/docs  (interactive Swagger UI)
+# → http://localhost:8898
+# → http://localhost:8898/docs  (interactive Swagger UI)
 ```
 
 ### Environment Variables
@@ -70,7 +70,7 @@ npm install
 # Optional: set the API key if the backend requires one
 echo "VITE_API_KEY=your_key_here" > .env.local
 
-# Start the dev server (proxies /api → localhost:8000 automatically)
+# Start the dev server (proxies /api → localhost:8898 automatically)
 npm run dev
 # → http://localhost:5173
 ```
@@ -87,7 +87,7 @@ npm run build
 
 ## API Reference
 
-The backend exposes a full OpenAPI spec at `http://localhost:8000/docs`.
+The backend exposes a full OpenAPI spec at `http://localhost:8898/docs`.
 
 | Router          | Prefix                 | Key Endpoints                                    |
 |-----------------|------------------------|--------------------------------------------------|

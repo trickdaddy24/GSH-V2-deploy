@@ -73,7 +73,7 @@ python subscription_manager.py
 ### Run the Web Interface
 
 ```bash
-# Terminal 1 — API backend (http://localhost:8000)
+# Terminal 1 — API backend (http://localhost:8898)
 cd web/backend
 python main.py
 
