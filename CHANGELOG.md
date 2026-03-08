@@ -4,6 +4,22 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.2.4] - 2026-03-08
+
+### Added
+- **Settings page** (`/settings`) — configure and enable/disable all four notification services from the UI
+  - **Telegram** — toggle, Bot Token, Chat ID
+  - **Discord** — toggle, Webhook URL
+  - **Pushover** — toggle, API Token, User Key
+  - **Email (SMTP)** — toggle, SMTP server/port, username, password, from address/name
+  - All credential fields have show/hide toggle; password fields skip update if left blank
+  - Changes write directly to `.env` and update in-memory config immediately (no restart needed)
+- `GET /api/notifications/settings` — returns current notification config (all fields)
+- `PATCH /api/notifications/settings` — updates one or more service configs, writes to `.env`
+- Settings nav item added to sidebar
+
+---
+
 ## [2.2.3] - 2026-03-08
 
 ### Fixed

@@ -1,5 +1,5 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Users, CreditCard, ShieldAlert, Shield, Sun, Moon, CalendarClock } from 'lucide-react'
+import { LayoutDashboard, Users, CreditCard, ShieldAlert, Shield, Sun, Moon, CalendarClock, Settings } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useTheme } from '../lib/ThemeContext'
 
@@ -9,6 +9,7 @@ const NAV = [
   { to: '/payments',    label: 'Payments',     icon: CreditCard },
   { to: '/risk',        label: 'Risk',         icon: ShieldAlert },
   { to: '/bulk-update', label: 'Bulk Update',  icon: CalendarClock },
+  { to: '/settings',    label: 'Settings',     icon: Settings },
 ]
 
 export default function Layout() {
@@ -44,7 +45,7 @@ export default function Layout() {
         </nav>
 
         <div className="border-t border-gray-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
-          <span className="text-xs text-gray-400 dark:text-slate-600">GSH Web v2.2.2</span>
+          <span className="text-xs text-gray-400 dark:text-slate-600">GSH Web v2.2.4</span>
           <button
             onClick={toggle}
             className="rounded-md p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"

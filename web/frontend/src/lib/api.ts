@@ -169,3 +169,16 @@ export const testTelegram = () =>
 
 export const getNotificationStatus = () =>
   api.get('/notifications/status').then(r => r.data)
+
+export interface NotificationSettings {
+  telegram:  { enabled: boolean; bot_token: string; chat_id: string }
+  discord:   { enabled: boolean; webhook_url: string }
+  pushover:  { enabled: boolean; api_token: string; user_key: string }
+  email:     { enabled: boolean; smtp_server: string; smtp_port: string; username: string; password: string; from_email: string; from_name: string }
+}
+
+export const getNotificationSettings = () =>
+  api.get<NotificationSettings>('/notifications/settings').then(r => r.data)
+
+export const updateNotificationSettings = (body: Partial<NotificationSettings>) =>
+  api.patch<{ updated: string[]; message: string }>('/notifications/settings', body).then(r => r.data)
