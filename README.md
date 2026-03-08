@@ -40,29 +40,73 @@ Two interfaces share the same database — use the **CLI** for quick terminal wo
 
 ## Requirements
 
-### CLI
 - Python 3.10+
-- Dependencies: `colorama`, `requests` (see `requirements.txt`)
+- Git (to clone the repository)
+- Node.js 18+ *(web interface only)*
+
+---
+
+## Installation
+
+The repo must be cloned — there is no PyPI package. Cloning gives you the script, the database, your `.env` config, and all generated files together in one place.
+
+### Mac / Linux
 
 ```bash
-pip install -r requirements.txt
+# 1. Clone the repository
+git clone https://github.com/trickdaddy24/GSH.git
+cd GSH
+
+# 2. (Recommended) Create a virtual environment
+python3 -m venv venv
+source venv/bin/activate
+
+# 3. Install CLI dependencies
+pip3 install -r requirements.txt
+
+# 4. Copy and configure environment variables
+cp .env.example .env
+# Open .env and fill in any notification service credentials you want to use
 ```
 
-### Web Interface
-- Python 3.10+ and Node.js 18+
-- See `web/README.md` for full setup instructions
+### Windows
+
+```powershell
+# 1. Clone the repository
+git clone https://github.com/trickdaddy24/GSH.git
+cd GSH
+
+# 2. (Recommended) Create a virtual environment
+python -m venv venv
+venv\Scripts\activate
+
+# 3. Install CLI dependencies
+pip install -r requirements.txt
+
+# 4. Copy and configure environment variables
+copy .env.example .env
+# Open .env and fill in any notification service credentials you want to use
+```
+
+> **No Git?** You can also download the repo as a ZIP from GitHub (Code → Download ZIP), extract it, then follow steps 2–4 above.
+
+### Install as a command (optional)
+
+If you want to run `gsh` from anywhere instead of calling `python subscription_manager.py`, install the package locally:
 
 **Mac / Linux**
 ```bash
-pip3 install -r web/backend/requirements.txt
-cd web/frontend && npm install
+pip3 install -e .
+gsh
 ```
 
 **Windows**
 ```powershell
-pip install -r web\backend\requirements.txt
-cd web\frontend && npm install
+pip install -e .
+gsh
 ```
+
+This uses the entry point defined in `pyproject.toml`. The `-e` flag installs in editable mode so the source file is used directly.
 
 ---
 
