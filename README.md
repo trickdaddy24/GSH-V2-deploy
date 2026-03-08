@@ -52,12 +52,16 @@ pip install -r requirements.txt
 - Python 3.10+ and Node.js 18+
 - See `web/README.md` for full setup instructions
 
+**Mac / Linux**
 ```bash
-# Backend
-pip install -r web/backend/requirements.txt
-
-# Frontend
+pip3 install -r web/backend/requirements.txt
 cd web/frontend && npm install
+```
+
+**Windows**
+```powershell
+pip install -r web\backend\requirements.txt
+cd web\frontend && npm install
 ```
 
 ---
@@ -72,9 +76,12 @@ python subscription_manager.py
 
 ### Run the Web Interface
 
+**Mac / Linux**
+
 ```bash
 # Terminal 1 — API backend (http://localhost:8898)
 cd web/backend
+source venv/bin/activate
 python main.py
 
 # Terminal 2 — React frontend (http://localhost:5173)
@@ -82,7 +89,20 @@ cd web/frontend
 npm run dev
 ```
 
-The frontend proxies all `/api` requests to the backend automatically. See `web/README.md` for production build and auth setup.
+**Windows**
+
+```powershell
+# Terminal 1 — API backend (http://localhost:8898)
+cd web\backend
+venv\Scripts\activate
+python main.py
+
+# Terminal 2 — React frontend (http://localhost:5173)
+cd web\frontend
+npm run dev
+```
+
+The frontend proxies all `/api` requests to the backend automatically. See `web/README.md` for full setup, auth, and production build instructions.
 
 You will be presented with the main menu:
 

@@ -21,27 +21,40 @@ environment variable, so no data migration is needed.
 - Python 3.10+
 - Packages: `fastapi`, `uvicorn[standard]`, `python-dotenv`, `requests`
 
-### Steps
+### Mac / Linux
 
 ```bash
 cd web/backend
 
-# Create a virtual environment (optional but recommended)
-python -m venv venv
-source venv/bin/activate   # Windows: venv\Scripts\activate
+python3 -m venv venv
+source venv/bin/activate
 
-# Install dependencies
 pip install -r requirements.txt
 
-# Copy and edit the env file
 cp ../../.env.example .env
-# Set DB_PATH to the absolute path of your OnDemand_subscriptions.db
-# Set ADMIN_API_KEY to a strong secret (leave blank to disable auth in dev)
+# Edit .env — set DB_PATH and optionally ADMIN_API_KEY
 
-# Run the API server
 python main.py
 # → http://localhost:8898
-# → http://localhost:8898/docs  (interactive Swagger UI)
+# → http://localhost:8898/docs  (Swagger UI)
+```
+
+### Windows
+
+```powershell
+cd web\backend
+
+python -m venv venv
+venv\Scripts\activate
+
+pip install -r requirements.txt
+
+copy ..\..\\.env.example .env
+# Edit .env — set DB_PATH and optionally ADMIN_API_KEY
+
+python main.py
+# → http://localhost:8898
+# → http://localhost:8898/docs  (Swagger UI)
 ```
 
 ### Environment Variables
@@ -59,23 +72,35 @@ python main.py
 ### Requirements
 - Node.js 18+ and npm (or pnpm / bun)
 
-### Steps
+### Mac / Linux
 
 ```bash
 cd web/frontend
 
-# Install dependencies
 npm install
 
-# Optional: set the API key if the backend requires one
+# Optional: set API key if backend auth is enabled
 echo "VITE_API_KEY=your_key_here" > .env.local
 
-# Start the dev server (proxies /api → localhost:8898 automatically)
 npm run dev
-# → http://localhost:5173
+# → http://localhost:5173  (proxies /api → localhost:8898)
 ```
 
-### Production Build
+### Windows
+
+```powershell
+cd web\frontend
+
+npm install
+
+# Optional: set API key if backend auth is enabled
+echo VITE_API_KEY=your_key_here > .env.local
+
+npm run dev
+# → http://localhost:5173  (proxies /api → localhost:8898)
+```
+
+### Production Build (both platforms)
 
 ```bash
 npm run build
