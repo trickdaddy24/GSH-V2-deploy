@@ -528,17 +528,17 @@ def add_payment(
                     (new_due_str, acc_id),
                 )
 
-            c.execute(
-                "INSERT INTO billing_history (subscription_id, payment_date, amount, status, new_due_date) "
-                "VALUES (?, ?, ?, ?, ?)",
-                (acc_id, datetime.now().strftime(DATE_FORMAT), amount, status, new_due_str),
-            )
-
             elif status == "grace_period":
                 c.execute(
                     "UPDATE subscriptions SET grace_period_used = 1, status = 'pending' WHERE id = ?",
                     (acc_id,),
                 )
+
+            c.execute(
+                "INSERT INTO billing_history (subscription_id, payment_date, amount, status, new_due_date) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (acc_id, datetime.now().strftime(DATE_FORMAT), amount, status, new_due_str),
+            )
 
             conn.commit()
         return True, None
