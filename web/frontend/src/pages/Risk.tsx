@@ -11,9 +11,9 @@ type Mode = 'general' | 'enhanced'
 
 const RISK_BADGE: Record<string, 'danger' | 'warning' | 'default' | 'muted'> = {
   critical: 'danger',
-  high: 'warning',
-  medium: 'default',
-  low: 'muted',
+  high:     'warning',
+  medium:   'default',
+  low:      'muted',
 }
 
 export default function Risk() {
@@ -28,28 +28,20 @@ export default function Risk() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-slate-100">Risk Analysis</h1>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Risk Analysis</h1>
         <div className="flex gap-2">
-          <Button
-            size="sm"
-            variant={mode === 'general' ? 'primary' : 'secondary'}
-            onClick={() => setMode('general')}
-          >
+          <Button size="sm" variant={mode === 'general' ? 'primary' : 'secondary'} onClick={() => setMode('general')}>
             <Shield size={14} /> General (7-day)
           </Button>
-          <Button
-            size="sm"
-            variant={mode === 'enhanced' ? 'primary' : 'secondary'}
-            onClick={() => setMode('enhanced')}
-          >
+          <Button size="sm" variant={mode === 'enhanced' ? 'primary' : 'secondary'} onClick={() => setMode('enhanced')}>
             <ShieldAlert size={14} /> Enhanced (4-day)
           </Button>
         </div>
       </div>
 
-      {isLoading && <p className="text-slate-400">Analyzing risk…</p>}
+      {isLoading && <p className="text-gray-400 dark:text-slate-400">Analyzing risk…</p>}
       {error && (
-        <div className="text-red-400 space-y-2">
+        <div className="text-red-500 space-y-2">
           <p>Failed to load risk report.</p>
           <Button size="sm" variant="secondary" onClick={() => refetch()}>Retry</Button>
         </div>
@@ -66,9 +58,9 @@ export default function Risk() {
 
           {data.predictions.length === 0 ? (
             <Card className="text-center py-10">
-              <Shield size={32} className="mx-auto text-emerald-400 mb-3" />
-              <p className="text-slate-300 font-medium">No at-risk subscribers detected.</p>
-              <p className="text-sm text-slate-500 mt-1">All accounts appear to be in good standing.</p>
+              <Shield size={32} className="mx-auto text-emerald-500 mb-3" />
+              <p className="text-gray-700 dark:text-slate-300 font-medium">No at-risk subscribers detected.</p>
+              <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">All accounts appear to be in good standing.</p>
             </Card>
           ) : (
             <div className="space-y-3">
@@ -83,9 +75,9 @@ export default function Risk() {
 
 function MetaStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-slate-900 border border-slate-800 px-4 py-3">
-      <p className="text-xs text-slate-500 uppercase tracking-wide">{label}</p>
-      <p className="text-slate-200 font-medium mt-0.5">{value}</p>
+    <div className="rounded-lg bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 px-4 py-3">
+      <p className="text-xs text-gray-500 dark:text-slate-500 uppercase tracking-wide">{label}</p>
+      <p className="text-gray-800 dark:text-slate-200 font-medium mt-0.5">{value}</p>
     </div>
   )
 }
@@ -96,11 +88,9 @@ function RiskCard({ p }: { p: RiskPrediction }) {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-slate-200">{p.username}</span>
-          <span className="text-xs text-slate-500">{p.id}</span>
-          <Badge variant={RISK_BADGE[level] ?? 'default'}>
-            {p.risk_level}
-          </Badge>
+          <span className="font-semibold text-gray-800 dark:text-slate-200">{p.username}</span>
+          <span className="text-xs text-gray-400 dark:text-slate-500">{p.id}</span>
+          <Badge variant={RISK_BADGE[level] ?? 'default'}>{p.risk_level}</Badge>
         </div>
         <span className={`text-lg font-bold ${riskColor(p.risk_level)}`}>
           Score {p.risk_score}
@@ -110,11 +100,11 @@ function RiskCard({ p }: { p: RiskPrediction }) {
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 text-sm">
         {p.flags.length > 0 && (
           <div>
-            <p className="text-xs text-slate-500 uppercase mb-1">Risk Flags</p>
+            <p className="text-xs text-gray-500 dark:text-slate-500 uppercase mb-1">Risk Flags</p>
             <ul className="space-y-0.5">
               {p.flags.map((f, i) => (
-                <li key={i} className="text-slate-300 flex gap-1.5">
-                  <span className="text-red-400">!</span> {f}
+                <li key={i} className="text-gray-700 dark:text-slate-300 flex gap-1.5">
+                  <span className="text-red-500">!</span> {f}
                 </li>
               ))}
             </ul>
@@ -122,11 +112,11 @@ function RiskCard({ p }: { p: RiskPrediction }) {
         )}
         {p.suggested_actions.length > 0 && (
           <div>
-            <p className="text-xs text-slate-500 uppercase mb-1">Suggested Actions</p>
+            <p className="text-xs text-gray-500 dark:text-slate-500 uppercase mb-1">Suggested Actions</p>
             <ul className="space-y-0.5">
               {p.suggested_actions.map((a, i) => (
-                <li key={i} className="text-slate-300 flex gap-1.5">
-                  <span className="text-brand-400">→</span> {a}
+                <li key={i} className="text-gray-700 dark:text-slate-300 flex gap-1.5">
+                  <span className="text-brand-500">→</span> {a}
                 </li>
               ))}
             </ul>

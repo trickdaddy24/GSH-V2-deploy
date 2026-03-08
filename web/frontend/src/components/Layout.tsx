@@ -1,6 +1,7 @@
 import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Users, CreditCard, ShieldAlert, Shield } from 'lucide-react'
+import { LayoutDashboard, Users, CreditCard, ShieldAlert, Shield, Sun, Moon } from 'lucide-react'
 import { cn } from '../lib/utils'
+import { useTheme } from '../lib/ThemeContext'
 
 const NAV = [
   { to: '/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
@@ -10,13 +11,15 @@ const NAV = [
 ]
 
 export default function Layout() {
+  const { theme, toggle } = useTheme()
+
   return (
-    <div className="flex h-screen overflow-hidden">
+    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-slate-950">
       {/* Sidebar */}
-      <aside className="flex w-56 flex-col border-r border-slate-800 bg-slate-900">
+      <aside className="flex w-56 flex-col border-r border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900">
         <div className="flex items-center gap-2 px-4 py-5">
           <Shield size={22} className="text-brand-500" />
-          <span className="font-bold text-slate-100 tracking-tight">GuardianStreams</span>
+          <span className="font-bold text-gray-900 dark:text-slate-100 tracking-tight">GuardianStreams</span>
         </div>
 
         <nav className="flex-1 space-y-0.5 px-2 py-2">
@@ -29,7 +32,7 @@ export default function Layout() {
                   'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
                   isActive
                     ? 'bg-brand-600 text-white'
-                    : 'text-slate-400 hover:bg-slate-800 hover:text-slate-100',
+                    : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100',
                 )
               }
             >
@@ -39,7 +42,16 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="px-4 py-3 text-xs text-slate-600">GSH Web v1.0</div>
+        <div className="border-t border-gray-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
+          <span className="text-xs text-gray-400 dark:text-slate-600">GSH Web v1.0</span>
+          <button
+            onClick={toggle}
+            className="rounded-md p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
+            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+          >
+            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+          </button>
+        </div>
       </aside>
 
       {/* Main */}

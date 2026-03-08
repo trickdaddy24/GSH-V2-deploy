@@ -31,37 +31,35 @@ export default function SubscriberDetail() {
     enabled: !!accId,
   })
 
-  const qInv = () => { qc.invalidateQueries({ queryKey: ['subscriber', accId] }); qc.invalidateQueries({ queryKey: ['subscribers'] }) }
+  const qInv = () => {
+    qc.invalidateQueries({ queryKey: ['subscriber', accId] })
+    qc.invalidateQueries({ queryKey: ['subscribers'] })
+  }
 
-  const updateMut = useMutation({ mutationFn: (f: Record<string, unknown>) => updateSubscriber(accId!, f), onSuccess: () => { qInv(); setEditing(false) }, onError: (e: Error) => alert(e.message) })
-  const deactivateMut = useMutation({ mutationFn: () => deactivateSubscriber(accId!), onSuccess: qInv, onError: (e: Error) => alert(e.message) })
-  const reactivateMut = useMutation({ mutationFn: () => reactivateSubscriber(accId!), onSuccess: qInv, onError: (e: Error) => alert(e.message) })
-  const deleteMut = useMutation({
-    mutationFn: () => deleteSubscriber(accId!),
-    onSuccess: () => navigate('/subscribers'),
-    onError: (e: Error) => alert(e.message),
-  })
-  const payMut = useMutation({
+  const updateMut  = useMutation({ mutationFn: (f: Record<string, unknown>) => updateSubscriber(accId!, f), onSuccess: () => { qInv(); setEditing(false) }, onError: (e: Error) => alert(e.message) })
+  const deactMut   = useMutation({ mutationFn: () => deactivateSubscriber(accId!), onSuccess: qInv, onError: (e: Error) => alert(e.message) })
+  const reactMut   = useMutation({ mutationFn: () => reactivateSubscriber(accId!), onSuccess: qInv, onError: (e: Error) => alert(e.message) })
+  const deleteMut  = useMutation({ mutationFn: () => deleteSubscriber(accId!), onSuccess: () => navigate('/subscribers'), onError: (e: Error) => alert(e.message) })
+  const payMut     = useMutation({
     mutationFn: (body: Parameters<typeof recordPayment>[0]) => recordPayment(body),
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['payments', accId] }); qInv(); setShowPayment(false) },
     onError: (e: Error) => alert(e.message),
   })
 
-  if (isLoading) return <p className="text-slate-400">Loading…</p>
-  if (!sub) return <p className="text-red-400">Subscriber not found.</p>
+  if (isLoading) return <p className="text-gray-400 dark:text-slate-400">Loading…</p>
+  if (!sub) return <p className="text-red-500">Subscriber not found.</p>
 
   return (
     <div className="space-y-5 max-w-3xl">
       <div className="flex items-center gap-3">
-        <button onClick={() => navigate(-1)} className="text-slate-400 hover:text-slate-100 transition-colors">
+        <button onClick={() => navigate(-1)} className="text-gray-400 hover:text-gray-700 dark:text-slate-400 dark:hover:text-slate-100 transition-colors">
           <ArrowLeft size={18} />
         </button>
-        <h1 className="text-xl font-bold text-slate-100">{sub.username}</h1>
-        <span className="text-slate-500 text-sm">{sub.id}</span>
+        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">{sub.username}</h1>
+        <span className="text-gray-400 dark:text-slate-500 text-sm">{sub.id}</span>
         <StatusBadge status={sub.status} isActive={sub.is_active} />
       </div>
 
-      {/* Info card */}
       <Card>
         <CardHeader>
           <CardTitle>Account Info</CardTitle>
@@ -70,11 +68,11 @@ export default function SubscriberDetail() {
               <Pencil size={12} /> Edit
             </Button>
             {sub.is_active ? (
-              <Button size="sm" variant="danger" onClick={() => deactivateMut.mutate()} disabled={deactivateMut.isPending}>
+              <Button size="sm" variant="danger" onClick={() => deactMut.mutate()} disabled={deactMut.isPending}>
                 <UserX size={12} /> Deactivate
               </Button>
             ) : (
-              <Button size="sm" variant="secondary" onClick={() => reactivateMut.mutate()} disabled={reactivateMut.isPending}>
+              <Button size="sm" variant="secondary" onClick={() => reactMut.mutate()} disabled={reactMut.isPending}>
                 <UserCheck size={12} /> Reactivate
               </Button>
             )}
@@ -99,7 +97,6 @@ export default function SubscriberDetail() {
         )}
       </Card>
 
-      {/* Payments */}
       <Card>
         <CardHeader>
           <CardTitle>Payment History</CardTitle>
@@ -115,26 +112,26 @@ export default function SubscriberDetail() {
         {payments && payments.length > 0 ? (
           <table className="w-full text-sm mt-3">
             <thead>
-              <tr className="text-xs text-slate-500 uppercase">
+              <tr className="text-xs text-gray-500 dark:text-slate-500 uppercase">
                 <th className="text-left pb-2">Date</th>
                 <th className="text-left pb-2">Amount</th>
                 <th className="text-left pb-2">Status</th>
                 <th className="text-left pb-2">New Due Date</th>
               </tr>
             </thead>
-            <tbody className="divide-y divide-slate-800">
+            <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
               {payments.map(p => (
                 <tr key={p.id}>
-                  <td className="py-2 text-slate-300">{formatDate(p.date)}</td>
-                  <td className="py-2 text-slate-300">{formatCurrency(p.amount)}</td>
-                  <td className="py-2 text-slate-300 capitalize">{p.status}</td>
-                  <td className="py-2 text-slate-300">{formatDate(p.new_due_date)}</td>
+                  <td className="py-2 text-gray-700 dark:text-slate-300">{formatDate(p.date)}</td>
+                  <td className="py-2 text-gray-700 dark:text-slate-300">{formatCurrency(p.amount)}</td>
+                  <td className="py-2 text-gray-700 dark:text-slate-300 capitalize">{p.status}</td>
+                  <td className="py-2 text-gray-700 dark:text-slate-300">{formatDate(p.new_due_date)}</td>
                 </tr>
               ))}
             </tbody>
           </table>
         ) : (
-          <p className="text-sm text-slate-500 mt-2">No payments recorded.</p>
+          <p className="text-sm text-gray-400 dark:text-slate-500 mt-2">No payments recorded.</p>
         )}
       </Card>
     </div>
@@ -144,8 +141,8 @@ export default function SubscriberDetail() {
 function InfoRow({ label, value }: { label: string; value: string | number | null | undefined }) {
   return (
     <div>
-      <dt className="text-xs text-slate-500">{label}</dt>
-      <dd className="text-slate-200">{value ?? '—'}</dd>
+      <dt className="text-xs text-gray-500 dark:text-slate-500">{label}</dt>
+      <dd className="text-gray-800 dark:text-slate-200">{value ?? '—'}</dd>
     </div>
   )
 }
@@ -173,11 +170,11 @@ function EditForm({ sub, onSave, loading, onCancel }: EditFormProps) {
       onSubmit={e => { e.preventDefault(); onSave({ ...form, custom_price: Number(form.custom_price) }) }}
       className="grid grid-cols-2 gap-3 md:grid-cols-3"
     >
-      <div><label className="text-xs text-slate-400 mb-1 block">Username</label><Input value={form.username} onChange={set('username')} /></div>
-      <div><label className="text-xs text-slate-400 mb-1 block">Email</label><Input type="email" value={form.email} onChange={set('email')} /></div>
-      <div><label className="text-xs text-slate-400 mb-1 block">Phone</label><Input value={form.phone} onChange={set('phone')} /></div>
-      <div><label className="text-xs text-slate-400 mb-1 block">Due Date</label><Input type="date" value={form.due_date} onChange={set('due_date')} /></div>
-      <div><label className="text-xs text-slate-400 mb-1 block">Price ($)</label><Input type="number" step="0.01" value={form.custom_price} onChange={set('custom_price')} /></div>
+      <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Username</label><Input value={form.username} onChange={set('username')} /></div>
+      <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Email</label><Input type="email" value={form.email} onChange={set('email')} /></div>
+      <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Phone</label><Input value={form.phone} onChange={set('phone')} /></div>
+      <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Due Date</label><Input type="date" value={form.due_date} onChange={set('due_date')} /></div>
+      <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Price ($)</label><Input type="number" step="0.01" value={form.custom_price} onChange={set('custom_price')} /></div>
       <div className="col-span-full flex justify-end gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
         <Button type="submit" size="sm" disabled={loading}>{loading ? 'Saving…' : 'Save Changes'}</Button>
@@ -209,19 +206,24 @@ function PaymentForm({ accId, onSubmit, loading }: PaymentFormProps) {
           custom_due_date: form.custom_due_date || undefined,
         })
       }}
-      className="grid grid-cols-2 gap-3 mb-4 md:grid-cols-4 border-b border-slate-800 pb-4"
+      className="grid grid-cols-2 gap-3 mb-4 md:grid-cols-4 border-b border-gray-100 dark:border-slate-800 pb-4"
     >
-      <div><label className="text-xs text-slate-400 mb-1 block">Amount ($) *</label><Input required type="number" step="0.01" value={form.amount} onChange={set('amount')} /></div>
+      <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Amount ($) *</label><Input required type="number" step="0.01" value={form.amount} onChange={set('amount')} /></div>
       <div>
-        <label className="text-xs text-slate-400 mb-1 block">Status</label>
-        <select className="w-full rounded-md bg-slate-800 border border-slate-700 px-3 py-1.5 text-sm text-slate-300 focus:outline-none focus:ring-2 focus:ring-brand-500" value={form.status} onChange={set('status')}>
+        <label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Status</label>
+        <select
+          className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500
+                     bg-white border-gray-300 text-gray-700
+                     dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+          value={form.status} onChange={set('status')}
+        >
           <option value="paid">Paid</option>
           <option value="partial">Partial</option>
           <option value="late">Late</option>
         </select>
       </div>
-      <div><label className="text-xs text-slate-400 mb-1 block">Advance Days</label><Input type="number" value={form.advance_days} onChange={set('advance_days')} /></div>
-      <div><label className="text-xs text-slate-400 mb-1 block">Or Custom Due Date</label><Input type="date" value={form.custom_due_date} onChange={set('custom_due_date')} /></div>
+      <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Advance Days</label><Input type="number" value={form.advance_days} onChange={set('advance_days')} /></div>
+      <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Or Custom Due Date</label><Input type="date" value={form.custom_due_date} onChange={set('custom_due_date')} /></div>
       <div className="col-span-full flex justify-end">
         <Button type="submit" size="sm" disabled={loading}>{loading ? 'Saving…' : 'Record Payment'}</Button>
       </div>

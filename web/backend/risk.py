@@ -49,17 +49,19 @@ def run_general_risk(customers: List[Dict]) -> Dict:
             "username": customer["username"],
             "risk_score": score,
             "risk_level": risk_level,
-            "reasons": reasons,
+            "flags": reasons,
             "suggested_actions": suggest_actions(customer, score),
             "due_date": customer["due_date"].strftime(DATE_FORMAT),
-            "due_in_days": (customer["due_date"] - datetime.now()).days,
+            "days_overdue": max(0 - (customer["due_date"] - datetime.now()).days, 0),
         })
 
     high = sum(1 for p in predictions if p["risk_level"] == "high")
     return {
         "predictions": predictions,
-        "generated_at": datetime.now().strftime(f"{DATE_FORMAT} %H:%M:%S"),
-        "total": len(predictions),
+        "generated_at": datetime.now().isoformat(),
+        "model": "General",
+        "threshold_days": 7,
+        "total_at_risk": len(predictions),
         "high_count": high,
         "medium_count": len(predictions) - high,
     }
@@ -95,19 +97,21 @@ def run_enhanced_risk(customers: List[Dict]) -> Dict:
             "username": customer["username"],
             "risk_score": score,
             "risk_level": risk_level,
-            "reasons": reasons,
+            "flags": reasons,
             "suggested_actions": [
                 "Urgent personal contact needed" if risk_level == "high" else "Send payment reminder"
             ],
             "due_date": customer["due_date"].strftime(DATE_FORMAT),
-            "due_in_days": days,
+            "days_overdue": max(0 - days, 0),
         })
 
     high = sum(1 for p in predictions if p["risk_level"] == "high")
     return {
-        "predictions": sorted(predictions, key=lambda x: (x["due_in_days"], -x["risk_score"])),
-        "generated_at": datetime.now().strftime(f"{DATE_FORMAT} %H:%M:%S"),
-        "total": len(predictions),
+        "predictions": sorted(predictions, key=lambda x: (-x["days_overdue"], -x["risk_score"])),
+        "generated_at": datetime.now().isoformat(),
+        "model": "Enhanced",
+        "threshold_days": 4,
+        "total_at_risk": len(predictions),
         "high_count": high,
         "medium_count": len(predictions) - high,
     }
