@@ -6,6 +6,7 @@ import Subscribers from './pages/Subscribers'
 import SubscriberDetail from './pages/SubscriberDetail'
 import Payments from './pages/Payments'
 import Risk from './pages/Risk'
+import BulkUpdate from './pages/BulkUpdate'
 import { useToast } from './lib/ToastContext'
 import { registerToast } from './lib/api'
 
@@ -26,6 +27,7 @@ export default function App() {
           <Route path="subscribers/:accId" element={<SubscriberDetail />} />
           <Route path="payments" element={<Payments />} />
           <Route path="risk" element={<Risk />} />
+          <Route path="bulk-update" element={<BulkUpdate />} />
         </Route>
       </Routes>
     </BrowserRouter>

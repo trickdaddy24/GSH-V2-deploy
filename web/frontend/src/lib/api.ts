@@ -142,6 +142,11 @@ export const getGeneralRisk = () =>
 export const getEnhancedRisk = () =>
   api.get<RiskReport>('/risk/enhanced').then(r => r.data)
 
+export const sendRiskReminders = (mode: 'general' | 'enhanced') =>
+  api.post<{ sent: number; total: number; errors: string[]; message: string }>(
+    '/risk/send-reminders', null, { params: { mode } }
+  ).then(r => r.data)
+
 export const bulkUpdateDueDates = (body: {
   advance_days: number
   account_ids?: string[]
@@ -149,6 +154,12 @@ export const bulkUpdateDueDates = (body: {
   package_filter?: string
 }, preview = false) =>
   api.post<BulkUpdateResult>('/subscribers/bulk/due-dates', body, { params: { preview } }).then(r => r.data)
+
+export const exportSubscribers = () =>
+  api.get<unknown[]>('/subscribers/export/json').then(r => r.data)
+
+export const importSubscribers = (data: unknown[]) =>
+  api.post<{ imported: number; skipped: number }>('/subscribers/import/json', data).then(r => r.data)
 
 export const triggerBackup = () =>
   api.post('/notifications/backup').then(r => r.data)

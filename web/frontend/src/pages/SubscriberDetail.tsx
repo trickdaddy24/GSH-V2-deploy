@@ -7,6 +7,7 @@ import {
   deactivateSubscriber, reactivateSubscriber, deleteSubscriber, recordPayment,
 } from '../lib/api'
 import { formatCurrency, formatDate } from '../lib/utils'
+import { PACKAGES } from '../lib/constants'
 import StatusBadge from '../components/StatusBadge'
 import { Card, CardHeader, CardTitle } from '../components/ui/Card'
 import Button from '../components/ui/Button'
@@ -160,21 +161,41 @@ function EditForm({ sub, onSave, loading, onCancel }: EditFormProps) {
     email: sub.email ?? '',
     phone: sub.phone ?? '',
     due_date: sub.due_date,
+    package_id: sub.package_id,
     custom_price: String(sub.price),
   })
-  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement>) =>
+  const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
+  const selectedPkg = PACKAGES.find(p => p.id === form.package_id)
 
   return (
     <form
-      onSubmit={e => { e.preventDefault(); onSave({ ...form, custom_price: Number(form.custom_price) }) }}
+      onSubmit={e => {
+        e.preventDefault()
+        onSave({ ...form, package: selectedPkg?.name, custom_price: Number(form.custom_price) })
+      }}
       className="grid grid-cols-2 gap-3 md:grid-cols-3"
     >
       <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Username</label><Input value={form.username} onChange={set('username')} /></div>
       <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Email</label><Input type="email" value={form.email} onChange={set('email')} /></div>
       <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Phone</label><Input value={form.phone} onChange={set('phone')} /></div>
+      <div>
+        <label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Package</label>
+        <select
+          value={form.package_id}
+          onChange={set('package_id')}
+          className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500
+                     bg-white border-gray-300 text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+        >
+          {PACKAGES.map(p => (
+            <option key={p.id} value={p.id}>{p.name}{p.price !== null ? ` — $${p.price}/mo` : ''}</option>
+          ))}
+        </select>
+      </div>
       <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Due Date</label><Input type="date" value={form.due_date} onChange={set('due_date')} /></div>
-      <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Price ($)</label><Input type="number" step="0.01" value={form.custom_price} onChange={set('custom_price')} /></div>
+      {selectedPkg?.price === null && (
+        <div><label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Price ($)</label><Input type="number" step="0.01" value={form.custom_price} onChange={set('custom_price')} /></div>
+      )}
       <div className="col-span-full flex justify-end gap-2">
         <Button type="button" variant="ghost" size="sm" onClick={onCancel}>Cancel</Button>
         <Button type="submit" size="sm" disabled={loading}>{loading ? 'Saving…' : 'Save Changes'}</Button>

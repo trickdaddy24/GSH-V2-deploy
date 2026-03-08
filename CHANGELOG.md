@@ -4,6 +4,25 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.2.2] - 2026-03-08
+
+### Added
+- **Bulk Update page** (`/bulk-update`) — advance due dates across all or filtered accounts by any number of days; shows affected count preview before applying; filterable by status and package
+- **Export / Import JSON** — Export button on Subscribers page downloads all active subscribers as a dated `.json` file; Import button uploads a JSON array and shows imported/skipped counts via toast
+- **Send Reminders button** on Risk page — triggers Telegram notifications for all at-risk accounts in the current mode (General or Enhanced); only appears when at-risk accounts exist
+- **Sortable columns** on Subscribers table — click any column header (ID, Username, Price, Due Date, Status) to sort; click again to reverse; sort indicators shown
+- **Package dropdown** on Add Subscriber and Edit forms — replaced free-text package ID input with a dropdown showing all packages with prices; Custom package reveals a price field
+- **Status filter fix** — Subscribers filter dropdown now shows actual database statuses (Active, Paid, Initial, Pending, Delinquent) instead of incorrect display labels
+- **Subscriber count** shown inline next to page title
+- `web/frontend/src/lib/constants.ts` — shared `PACKAGES` and `STATUSES` constants used across all forms and filters
+- `/api/dashboard/packages` endpoint — returns package list from backend config
+- `/api/risk/send-reminders` endpoint — runs risk analysis and sends Telegram reminders for at-risk accounts
+
+### Changed
+- `web/frontend/src/components/Layout.tsx` — added Bulk Update nav item, updated version to v2.2.2
+
+---
+
 ## [2.2.1] - 2026-03-08
 
 ### Added

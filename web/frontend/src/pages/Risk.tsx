@@ -1,8 +1,9 @@
 import { useState } from 'react'
-import { useQuery } from '@tanstack/react-query'
-import { ShieldAlert, Shield } from 'lucide-react'
-import { getGeneralRisk, getEnhancedRisk, RiskPrediction } from '../lib/api'
+import { useQuery, useMutation } from '@tanstack/react-query'
+import { ShieldAlert, Shield, Send } from 'lucide-react'
+import { getGeneralRisk, getEnhancedRisk, sendRiskReminders, RiskPrediction } from '../lib/api'
 import { riskColor } from '../lib/utils'
+import { useToast } from '../lib/ToastContext'
 import { Card, CardHeader, CardTitle } from '../components/ui/Card'
 import Button from '../components/ui/Button'
 import Badge from '../components/ui/Badge'
@@ -18,11 +19,17 @@ const RISK_BADGE: Record<string, 'danger' | 'warning' | 'default' | 'muted'> = {
 
 export default function Risk() {
   const [mode, setMode] = useState<Mode>('general')
+  const { addToast } = useToast()
 
   const { data, isLoading, error, refetch } = useQuery({
     queryKey: ['risk', mode],
     queryFn: mode === 'general' ? getGeneralRisk : getEnhancedRisk,
     staleTime: 60_000,
+  })
+
+  const reminderMut = useMutation({
+    mutationFn: () => sendRiskReminders(mode),
+    onSuccess: r => addToast(r.message + (r.errors.length ? ` (${r.errors.length} failed)` : ''), r.errors.length ? 'info' : 'success'),
   })
 
   return (
@@ -36,6 +43,11 @@ export default function Risk() {
           <Button size="sm" variant={mode === 'enhanced' ? 'primary' : 'secondary'} onClick={() => setMode('enhanced')}>
             <ShieldAlert size={14} /> Enhanced (4-day)
           </Button>
+          {data && data.total_at_risk > 0 && (
+            <Button size="sm" variant="secondary" onClick={() => reminderMut.mutate()} disabled={reminderMut.isPending}>
+              <Send size={14} /> {reminderMut.isPending ? 'Sending…' : 'Send Reminders'}
+            </Button>
+          )}
         </div>
       </div>
 
