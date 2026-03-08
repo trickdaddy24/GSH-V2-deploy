@@ -4,6 +4,24 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.2.1] - 2026-03-08
+
+### Added
+- **Backend startup diagnostics** — prints DB path, `.env` status, and whether the DB file exists on every startup
+- **`/api/debug` endpoint** — returns configured DB path, absolute path, `.env` status, row counts, and column list; useful for diagnosing missing data
+- **Global exception handler** — all unhandled backend errors are caught, logged to `gsh_backend.log`, and returned as JSON `{"detail": ..., "type": ...}` instead of crashing silently
+- **Frontend error toasts** — any failed API call now shows a red toast notification (bottom-right) with the error detail; toasts auto-dismiss after 6 seconds
+- **`ToastContext`** (`web/frontend/src/lib/ToastContext.tsx`) — global toast provider wired into `main.tsx`; `useToast()` hook available in any component
+- **Axios response interceptor** — captures all API errors and routes them to the toast system automatically
+
+### Changed
+- `web/backend/main.py` — added logging setup, startup print block, global exception handler, `/api/debug` route
+- `web/frontend/src/lib/api.ts` — added `registerToast()` and axios error interceptor
+- `web/frontend/src/App.tsx` — registers toast function with API client on mount
+- `web/frontend/src/main.tsx` — wrapped app with `ToastProvider`
+
+---
+
 ## [2.2.0] - 2026-03-08
 
 ### Added

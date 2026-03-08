@@ -1,3 +1,4 @@
+import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
 import Dashboard from './pages/Dashboard'
@@ -5,8 +6,16 @@ import Subscribers from './pages/Subscribers'
 import SubscriberDetail from './pages/SubscriberDetail'
 import Payments from './pages/Payments'
 import Risk from './pages/Risk'
+import { useToast } from './lib/ToastContext'
+import { registerToast } from './lib/api'
 
 export default function App() {
+  const { addToast } = useToast()
+
+  useEffect(() => {
+    registerToast(addToast)
+  }, [addToast])
+
   return (
     <BrowserRouter>
       <Routes>

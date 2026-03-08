@@ -1,4 +1,5 @@
 import axios from 'axios'
+import type { ToastType } from './ToastContext'
 
 const API_KEY = import.meta.env.VITE_API_KEY ?? ''
 
@@ -6,6 +7,23 @@ export const api = axios.create({
   baseURL: '/api',
   headers: API_KEY ? { 'X-API-Key': API_KEY } : {},
 })
+
+// Allows App to register the toast function after mount
+type ToastFn = (msg: string, type?: ToastType) => void
+let _toast: ToastFn = () => {}
+export const registerToast = (fn: ToastFn) => { _toast = fn }
+
+api.interceptors.response.use(
+  res => res,
+  err => {
+    const detail = err.response?.data?.detail
+    const msg = Array.isArray(detail)
+      ? detail.map((d: { msg: string }) => d.msg).join('; ')
+      : (detail ?? err.message ?? 'Unknown error')
+    _toast(`${err.config?.url ?? 'API'}: ${msg}`, 'error')
+    return Promise.reject(new Error(msg))
+  },
+)
 
 // ── Types ──────────────────────────────────────────────────────────────────
 

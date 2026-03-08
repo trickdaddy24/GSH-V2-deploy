@@ -1,46 +1,54 @@
 import sqlite3, os, sys
 
+def check_db(path):
+    if not os.path.exists(path):
+        return
+    try:
+        c = sqlite3.connect(path).cursor()
+        count = c.execute("SELECT COUNT(*) FROM subscriptions").fetchone()[0]
+        if count > 0:
+            rows = c.execute("SELECT id, username, package, price FROM subscriptions LIMIT 2").fetchall()
+            print(f"\n*** FOUND DATA ({count} subscribers): {os.path.abspath(path)}")
+            for r in rows:
+                print("   ", dict(zip(["id","username","package","price"], r)))
+        else:
+            print(f"  empty: {os.path.abspath(path)}")
+    except Exception as e:
+        print(f"  error ({e}): {path}")
+
 # Load DB_PATH from web/backend/.env
 env_path = os.path.join(os.path.dirname(os.path.abspath(__file__)), "web", "backend", ".env")
-db_path = None
-
+db_from_env = None
 if os.path.exists(env_path):
     with open(env_path) as f:
         for line in f:
             stripped = line.strip()
             if stripped.startswith("DB_PATH="):
-                db_path = stripped.split("=", 1)[1].strip()
+                db_from_env = stripped.split("=", 1)[1].strip()
                 break
 
-if not db_path:
-    db_path = "OnDemand_subscriptions.db"
-    print(f"WARNING: DB_PATH not found in .env — using default: {db_path}")
-else:
-    print(f"DB_PATH from .env: {db_path}")
+print(f"DB_PATH in .env: {db_from_env}")
+print("\nScanning all GSH-related databases...\n")
 
-print(f"Absolute path:    {os.path.abspath(db_path)}")
-print(f"File exists:      {os.path.exists(db_path)}")
+candidates = [
+    db_from_env,
+    "OnDemand_subscriptions.db",
+    r"C:\Users\stunna\Documents\GSH\OnDemand_subscriptions.db",
+    r"C:\Users\stunna\Documents\GSH\db\OnDemand_subscriptions.db",
+    r"C:\Users\stunna\Documents\GSH\db\OnDemand_subscriptions_backup.db",
+    r"C:\Users\stunna\Documents\Guardian Hosting 4.0\OnDemand_subscriptions.db",
+]
 
-if not os.path.exists(db_path):
-    print("ERROR: file not found")
-    sys.exit(1)
+# Also scan GSH directory tree
+base = r"C:\Users\stunna\Documents\GSH"
+if os.path.exists(base):
+    for root, dirs, files in os.walk(base):
+        for f in files:
+            if f.endswith(".db"):
+                candidates.append(os.path.join(root, f))
 
-conn = sqlite3.connect(db_path)
-conn.row_factory = sqlite3.Row
-c = conn.cursor()
-
-print("\n--- Schema ---")
-print("subscriptions:", [r[1] for r in c.execute("PRAGMA table_info(subscriptions)")])
-print("billing_history:", [r[1] for r in c.execute("PRAGMA table_info(billing_history)")])
-
-print("\n--- Row counts ---")
-print("Total rows:     ", c.execute("SELECT COUNT(*) FROM subscriptions").fetchone()[0])
-print("is_active = 1:  ", c.execute("SELECT COUNT(*) FROM subscriptions WHERE is_active = 1").fetchone()[0])
-print("is_active = 0:  ", c.execute("SELECT COUNT(*) FROM subscriptions WHERE is_active = 0").fetchone()[0])
-print("is_active NULL: ", c.execute("SELECT COUNT(*) FROM subscriptions WHERE is_active IS NULL").fetchone()[0])
-
-print("\n--- First 3 subscribers ---")
-for row in c.execute("SELECT id, username, package, price, is_active FROM subscriptions LIMIT 3"):
-    print(dict(row))
-
-conn.close()
+seen = set()
+for path in candidates:
+    if path and path not in seen:
+        seen.add(path)
+        check_db(path)
