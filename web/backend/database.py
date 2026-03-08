@@ -59,7 +59,7 @@ def migrate_db():
         """)
         db.commit()
 
-        # Migrations: add columns that may be missing from older databases
+        # ── subscriptions: add missing columns ────────────────────────────────
         sub_cols = {row[1] for row in c.execute("PRAGMA table_info(subscriptions)")}
         for col, defn in [
             ("is_active",         "INTEGER DEFAULT 1"),
@@ -73,7 +73,17 @@ def migrate_db():
             if col not in sub_cols:
                 c.execute(f"ALTER TABLE subscriptions ADD COLUMN {col} {defn}")
 
+        # Copy data from old column names if present (created by earlier broken migration)
+        sub_cols = {row[1] for row in c.execute("PRAGMA table_info(subscriptions)")}
+        if "custom_price" in sub_cols:
+            c.execute("UPDATE subscriptions SET price = custom_price WHERE (price IS NULL OR price = 0) AND custom_price IS NOT NULL")
+        if "package_id" in sub_cols:
+            c.execute("UPDATE subscriptions SET package = package_id WHERE package IS NULL AND package_id IS NOT NULL")
+
+        # ── billing_history: rename 'date' → 'payment_date' if needed ─────────
         bill_cols = {row[1] for row in c.execute("PRAGMA table_info(billing_history)")}
+        if "date" in bill_cols and "payment_date" not in bill_cols:
+            c.execute("ALTER TABLE billing_history RENAME COLUMN date TO payment_date")
         if "new_due_date" not in bill_cols:
             c.execute("ALTER TABLE billing_history ADD COLUMN new_due_date TEXT")
 
