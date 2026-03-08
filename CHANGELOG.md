@@ -4,6 +4,27 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.2.0] - 2026-03-08
+
+### Added
+- **Web Interface** — Full FastAPI + React web UI inside `web/`
+  - `web/backend/` — FastAPI REST API with 5 routers (`/api/dashboard`, `/api/subscribers`, `/api/payments`, `/api/risk`, `/api/notifications`), Pydantic v2 models, optional `X-API-Key` authentication, shares the CLI's SQLite database via `DB_PATH` env var
+  - `web/backend/database.py` — All DB operations extracted from the CLI, returns dicts instead of printing
+  - `web/backend/risk.py` — Risk engine (`calculate_risk_score`, `suggest_actions`, `run_general_risk`, `run_enhanced_risk`) usable independently of the CLI
+  - `web/frontend/` — React 18 + Vite + TypeScript + Tailwind CSS dark UI
+  - **Dashboard page** — Stat cards (totals, revenue, overdue), notification status panel, one-click DB backup and Telegram test
+  - **Subscribers page** — Paginated sortable table with live search, status filter, inactive toggle, inline Add form
+  - **Subscriber Detail page** — View/edit account info, deactivate/reactivate/delete, full payment history, record new payment
+  - **Payments page** — Payment history lookup by account ID
+  - **Risk page** — Toggle between General (7-day) and Enhanced (4-day) risk models, per-account flag and action cards
+  - `web/README.md` — Setup and run instructions for both backend and frontend
+
+### Changed
+- `pyproject.toml` version bumped to `2.2.0`
+- `README.md` updated with web interface overview, features, usage, and version history
+
+---
+
 ## [2.1.0] - 2026-03-08
 
 ### Added

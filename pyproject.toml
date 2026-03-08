@@ -4,8 +4,8 @@ build-backend = "setuptools.backends.legacy:build"
 
 [project]
 name = "guardianstreams-billing"
-version = "2.1.0"
-description = "GuardianStreams billing management CLI — subscription tracking, payment recording, risk prediction, and multi-channel notifications."
+version = "2.2.0"
+description = "GuardianStreams billing management system — CLI tool and FastAPI + React web interface for subscription tracking, payment recording, risk prediction, and multi-channel notifications."
 readme = "README.md"
 requires-python = ">=3.10"
 license = { text = "MIT" }

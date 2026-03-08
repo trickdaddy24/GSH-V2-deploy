@@ -1,17 +1,20 @@
 # GuardianStreams Billing System
 
-A command-line billing management tool for streaming service subscriptions. Handles customer onboarding, payment recording, subscription status tracking, risk prediction, and multi-channel payment reminders.
+A subscription billing management system for streaming service operators — available as both a command-line tool and a full web interface. Handles customer onboarding, payment recording, subscription status tracking, risk prediction, and multi-channel payment reminders.
 
 ---
 
 ## Overview
 
-GuardianStreams Billing System is a self-contained CLI application backed by a local SQLite database. It is designed for small-to-medium streaming service operators who need a simple but capable tool to manage subscriber billing without a full SaaS platform. All data stays local. Notifications are sent via configurable external services.
+GuardianStreams Billing System is a self-contained application backed by a local SQLite database. It is designed for small-to-medium streaming service operators who need a simple but capable tool to manage subscriber billing without a full SaaS platform.
+
+Two interfaces share the same database — use the **CLI** for quick terminal workflows or the **web UI** (FastAPI + React) for a visual browser-based dashboard. All data stays local. Notifications are sent via configurable external services.
 
 ---
 
 ## Features
 
+### CLI
 - **Dashboard** — Live summary of subscriber counts, revenue, delinquent accounts, upcoming dues, and recent payments shown on startup
 - **Customer Management** — Add, view, edit, search by name, and soft-deactivate or permanently delete subscribers with color-coded status display
 - **Flexible Sorting & Filtering** — Sort by ID, name, due date, price, or status; filter by status, package, or upcoming due dates
@@ -25,17 +28,36 @@ GuardianStreams Billing System is a self-contained CLI application backed by a l
 - **Multi-Channel Notifications** — System events (new users, payments, errors) broadcast to all enabled notification channels
 - **Schema Migrations** — Database columns are added automatically on startup if missing; safe to run against older databases
 
+### Web Interface (`web/`)
+- **Browser Dashboard** — Stat cards for totals, revenue, overdue counts; notification status panel; one-click DB backup and Telegram test
+- **Subscribers Table** — Paginated, searchable, filterable grid with live search; click any row for full detail view
+- **Subscriber Detail** — Edit account info, deactivate/reactivate, permanently delete, view and record payment history — all in-browser
+- **Risk Analysis** — Toggle between General (7-day) and Enhanced (4-day) risk models; per-account flag list and suggested actions
+- **REST API** — FastAPI backend with Swagger UI at `/docs`; all endpoints protected by optional API key auth
+- **Shared Database** — Web backend reads the same SQLite file as the CLI — no sync required
+
 ---
 
 ## Requirements
 
+### CLI
 - Python 3.10+
-- See `requirements.txt` for dependencies
-
-Install dependencies:
+- Dependencies: `colorama`, `requests` (see `requirements.txt`)
 
 ```bash
 pip install -r requirements.txt
+```
+
+### Web Interface
+- Python 3.10+ and Node.js 18+
+- See `web/README.md` for full setup instructions
+
+```bash
+# Backend
+pip install -r web/backend/requirements.txt
+
+# Frontend
+cd web/frontend && npm install
 ```
 
 ---
@@ -47,6 +69,20 @@ pip install -r requirements.txt
 ```bash
 python subscription_manager.py
 ```
+
+### Run the Web Interface
+
+```bash
+# Terminal 1 — API backend (http://localhost:8000)
+cd web/backend
+python main.py
+
+# Terminal 2 — React frontend (http://localhost:5173)
+cd web/frontend
+npm run dev
+```
+
+The frontend proxies all `/api` requests to the backend automatically. See `web/README.md` for production build and auth setup.
 
 You will be presented with the main menu:
 
@@ -72,7 +108,7 @@ GuardianStreams Billing System  v2.1.0
  0.  Exit
 ```
 
-### Common Workflows
+### CLI Workflows
 
 **Add a new subscriber**
 Select `2`, enter username, optional email/phone, choose a package, and set a due date.
@@ -98,6 +134,23 @@ Select `15` — creates a timestamped copy of the `.db` file in the current dire
 
 **Import existing data**
 Select `10` and provide a path to a JSON file matching the export format (see [Data Directory](#data-directory)).
+
+### Web Workflows
+
+**View and manage subscribers**
+Go to `/subscribers` — search by name or email, filter by status, toggle inactive accounts. Click any row to open the detail view.
+
+**Edit or deactivate an account**
+Open a subscriber's detail page → click **Edit** to change username/email/phone/price/due date, or **Deactivate** to soft-hide the account. Reactivate or permanently delete from the same page.
+
+**Record a payment via web**
+Open a subscriber's detail page → click **Record Payment** → fill in amount, status, and new due date advance days.
+
+**Run risk analysis**
+Go to `/risk` → toggle between General (7-day) and Enhanced (4-day) models. Each at-risk account shows its score, flags, and suggested actions.
+
+**Backup the database**
+Go to `/dashboard` → click **Backup Now**. A timestamped `.db` copy is created on the server.
 
 ---
 
@@ -132,6 +185,20 @@ PUSHOVER_USER_KEY=your_user_key
 
 All notification services are optional and disabled by default.
 
+### Web-Specific Variables
+
+Add these to `web/backend/.env` (or copy from `web/README.md`):
+
+```env
+# Path to the shared SQLite database
+DB_PATH=../../OnDemand_subscriptions.db
+
+# Optional API key — leave blank to disable auth (local dev)
+ADMIN_API_KEY=your_strong_secret_here
+```
+
+The web backend inherits all notification env vars from the same `.env` file.
+
 ---
 
 ## Data Directory
@@ -141,10 +208,37 @@ The following files are created automatically in the working directory:
 | File | Description |
 |---|---|
 | `OnDemand_subscriptions.db` | Primary SQLite database (subscriptions + billing history) |
+| `OnDemand_subscriptions_backup_YYYYMMDD_HHMMSS.db` | Timestamped database backup (CLI option 15 or web Dashboard) |
 | `GuardianStreams_export.json` | Output of the JSON export function |
 | `risky_customers.json` | Output of the general risk predictor |
 | `payment_risk_report_YYYYMMDD_HHMM.json` | Timestamped report from the enhanced risk predictor |
 | `email_detailed.log` | Detailed email send log with redacted content |
+
+### Web Directory Structure
+
+```
+web/
+├── backend/
+│   ├── main.py          FastAPI app entry point
+│   ├── config.py        CONFIG dict + env var loading
+│   ├── database.py      All DB operations (shared with CLI logic)
+│   ├── models.py        Pydantic v2 request/response models
+│   ├── auth.py          X-API-Key header authentication
+│   ├── risk.py          Risk scoring engine
+│   ├── requirements.txt Backend Python dependencies
+│   └── routers/         One file per API prefix
+│       ├── dashboard.py
+│       ├── subscribers.py
+│       ├── payments.py
+│       ├── risk.py
+│       └── notifications.py
+└── frontend/
+    ├── src/
+    │   ├── pages/       Dashboard, Subscribers, SubscriberDetail, Payments, Risk
+    │   ├── components/  Layout, StatCard, StatusBadge, ui/{Button,Card,Input,Badge}
+    │   └── lib/         api.ts (typed API client), utils.ts
+    └── package.json
+```
 
 ### Export Format
 
@@ -176,6 +270,7 @@ The following files are created automatically in the working directory:
 
 | Version | Date | Summary |
 |---|---|---|
+| 2.2.0 | 2026-03-08 | FastAPI + React web interface (GSH Web v1.0); shared SQLite DB, 5 REST API routers, full browser UI |
 | 2.1.0 | 2026-03-08 | Dashboard, search, deactivate/delete, bulk due dates, DB backup, .gitignore, .env.example |
 | 2.0.0 | 2026-03-08 | Modular risk helpers, N+1-free SQL, named constants, HTML email, DB index |
 | 1.0.2 | — | HTML email, retry logic, grace period, enhanced risk predictor |
