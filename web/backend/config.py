@@ -4,7 +4,7 @@ from dotenv import load_dotenv
 load_dotenv()
 
 DATE_FORMAT = "%m-%d-%Y"
-DATE_INPUT_FORMATS = ("%m-%d-%y", "%m-%d-%Y")
+DATE_INPUT_FORMATS = ("%m-%d-%y", "%m-%d-%Y", "%Y-%m-%d")
 ACCOUNT_PREFIX = "dtv."
 ACCOUNT_PADDING = 3
 DELINQUENT_DAYS = 30

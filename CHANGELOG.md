@@ -4,6 +4,13 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.2.3] - 2026-03-08
+
+### Fixed
+- **Invalid due date format** — added `%Y-%m-%d` (ISO 8601) to `DATE_INPUT_FORMATS` in `config.py` so dates from the HTML date picker (`2026-03-08`) are accepted by the backend
+
+---
+
 ## [2.2.2] - 2026-03-08
 
 ### Added
