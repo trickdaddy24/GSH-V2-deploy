@@ -1,0 +1,21 @@
+[build-system]
+requires = ["setuptools>=68", "wheel"]
+build-backend = "setuptools.backends.legacy:build"
+
+[project]
+name = "guardianstreams-billing"
+version = "2.0.0"
+description = "GuardianStreams billing management CLI — subscription tracking, payment recording, risk prediction, and multi-channel notifications."
+readme = "README.md"
+requires-python = ">=3.10"
+license = { text = "MIT" }
+dependencies = [
+    "colorama>=0.4.6",
+    "requests>=2.31.0",
+]
+
+[project.scripts]
+gsh = "subscription_manager:main"
+
+[tool.setuptools]
+py-modules = ["subscription_manager"]
