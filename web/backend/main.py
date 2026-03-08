@@ -1,6 +1,9 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from database import migrate_db
 from routers import dashboard, subscribers, payments, risk, notifications
+
+migrate_db()
 
 app = FastAPI(
     title="GuardianStreams Billing API",

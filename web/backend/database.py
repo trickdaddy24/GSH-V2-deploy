@@ -24,6 +24,25 @@ def get_db():
     return db
 
 
+def migrate_db():
+    """Add any missing columns to existing databases on startup."""
+    db = get_db()
+    try:
+        c = db.cursor()
+        existing = {row[1] for row in c.execute("PRAGMA table_info(subscriptions)")}
+        if "is_active" not in existing:
+            c.execute("ALTER TABLE subscriptions ADD COLUMN is_active INTEGER DEFAULT 1")
+            db.commit()
+        if "creation_date" not in existing:
+            c.execute("ALTER TABLE subscriptions ADD COLUMN creation_date TEXT")
+            db.commit()
+        if "grace_period_used" not in existing:
+            c.execute("ALTER TABLE subscriptions ADD COLUMN grace_period_used INTEGER DEFAULT 0")
+            db.commit()
+    finally:
+        db.close()
+
+
 def parse_date(date_str: str) -> Optional[datetime]:
     if not date_str:
         return None
