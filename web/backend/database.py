@@ -65,6 +65,10 @@ def migrate_db():
             ("is_active",         "INTEGER DEFAULT 1"),
             ("creation_date",     "TEXT"),
             ("grace_period_used", "INTEGER DEFAULT 0"),
+            ("price",             "INTEGER DEFAULT 0"),
+            ("package",           "TEXT"),
+            ("email",             "TEXT"),
+            ("phone",             "TEXT"),
         ]:
             if col not in sub_cols:
                 c.execute(f"ALTER TABLE subscriptions ADD COLUMN {col} {defn}")
