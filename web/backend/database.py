@@ -29,26 +29,28 @@ def migrate_db():
     db = get_db()
     try:
         c = db.cursor()
+        # Schema matches the CLI's init_db() exactly
         c.executescript("""
             CREATE TABLE IF NOT EXISTS subscriptions (
                 id TEXT PRIMARY KEY,
                 username TEXT NOT NULL,
                 email TEXT,
                 phone TEXT,
-                package_id TEXT NOT NULL,
-                custom_price REAL,
-                due_date TEXT NOT NULL,
-                status TEXT DEFAULT 'initial',
-                creation_date TEXT,
+                package TEXT,
+                price INTEGER,
+                due_date TEXT,
+                status TEXT NOT NULL CHECK(status IN
+                    ('initial','paid','delinquent','pending','active')),
                 grace_period_used INTEGER DEFAULT 0,
+                creation_date TEXT,
                 is_active INTEGER DEFAULT 1
             );
             CREATE TABLE IF NOT EXISTS billing_history (
                 id INTEGER PRIMARY KEY AUTOINCREMENT,
-                subscription_id TEXT NOT NULL,
-                amount REAL NOT NULL,
-                status TEXT NOT NULL,
-                date TEXT NOT NULL,
+                subscription_id TEXT,
+                payment_date TEXT,
+                amount REAL,
+                status TEXT CHECK(status IN ('paid','failed','grace_period')),
                 new_due_date TEXT,
                 FOREIGN KEY (subscription_id) REFERENCES subscriptions(id)
             );
@@ -57,15 +59,20 @@ def migrate_db():
         """)
         db.commit()
 
-        # Add columns that may be missing from older databases
-        existing = {row[1] for row in c.execute("PRAGMA table_info(subscriptions)")}
+        # Migrations: add columns that may be missing from older databases
+        sub_cols = {row[1] for row in c.execute("PRAGMA table_info(subscriptions)")}
         for col, defn in [
             ("is_active",         "INTEGER DEFAULT 1"),
             ("creation_date",     "TEXT"),
             ("grace_period_used", "INTEGER DEFAULT 0"),
         ]:
-            if col not in existing:
+            if col not in sub_cols:
                 c.execute(f"ALTER TABLE subscriptions ADD COLUMN {col} {defn}")
+
+        bill_cols = {row[1] for row in c.execute("PRAGMA table_info(billing_history)")}
+        if "new_due_date" not in bill_cols:
+            c.execute("ALTER TABLE billing_history ADD COLUMN new_due_date TEXT")
+
         db.commit()
     finally:
         db.close()
@@ -503,12 +510,7 @@ def add_payment(
 
             _, _, current_due_str = row
 
-            c.execute(
-                "INSERT INTO billing_history (subscription_id, payment_date, amount, status) "
-                "VALUES (?, ?, ?, ?)",
-                (acc_id, datetime.now().strftime(DATE_FORMAT), amount, status),
-            )
-
+            new_due_str = None
             if status == "paid":
                 if custom_due_date:
                     new_due = parse_date(custom_due_date)
@@ -525,6 +527,12 @@ def add_payment(
                     "UPDATE subscriptions SET due_date = ?, status = 'paid' WHERE id = ?",
                     (new_due_str, acc_id),
                 )
+
+            c.execute(
+                "INSERT INTO billing_history (subscription_id, payment_date, amount, status, new_due_date) "
+                "VALUES (?, ?, ?, ?, ?)",
+                (acc_id, datetime.now().strftime(DATE_FORMAT), amount, status, new_due_str),
+            )
 
             elif status == "grace_period":
                 c.execute(
@@ -543,7 +551,7 @@ def get_payment_history(acc_id: str) -> List[Dict]:
         with get_db() as conn:
             c = conn.cursor()
             c.execute(
-                "SELECT id, subscription_id, payment_date, amount, status "
+                "SELECT id, subscription_id, payment_date, amount, status, new_due_date "
                 "FROM billing_history WHERE subscription_id = ? ORDER BY payment_date DESC",
                 (acc_id,),
             )
