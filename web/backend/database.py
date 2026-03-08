@@ -184,81 +184,51 @@ def _row_to_subscriber(row, latest_payment: Optional[Dict] = None) -> Dict:
 
 def get_dashboard_stats() -> Dict:
     now = datetime.now()
-    cutoff = now + timedelta(days=7)
+    today_str = now.strftime(DATE_FORMAT)
+    this_month = now.strftime("%m-%Y")
+    last_month_dt = (now.replace(day=1) - timedelta(days=1))
+    last_month = last_month_dt.strftime("%m-%Y")
 
     with get_db() as conn:
         c = conn.cursor()
 
+        c.execute("SELECT COUNT(*) FROM subscriptions")
+        total = c.fetchone()[0]
+
         c.execute("SELECT COUNT(*) FROM subscriptions WHERE is_active = 1")
-        total_active = c.fetchone()[0]
+        active = c.fetchone()[0]
 
         c.execute("SELECT COUNT(*) FROM subscriptions WHERE is_active = 0")
-        total_inactive = c.fetchone()[0]
+        inactive = c.fetchone()[0]
 
-        c.execute("SELECT COALESCE(SUM(price), 0) FROM subscriptions WHERE is_active = 1")
-        monthly_revenue = float(c.fetchone()[0])
+        c.execute("SELECT COUNT(*) FROM subscriptions WHERE is_active = 1 AND due_date = ?", (today_str,))
+        due_today = c.fetchone()[0]
 
-        c.execute("SELECT status, COUNT(*) FROM subscriptions WHERE is_active = 1 GROUP BY status")
-        status_counts = dict(c.fetchall())
+        c.execute("SELECT COUNT(*) FROM subscriptions WHERE is_active = 1 AND due_date < ?", (today_str,))
+        overdue = c.fetchone()[0]
 
-        c.execute("""
-            SELECT b.payment_date, b.amount, b.status, s.username, s.id
-            FROM billing_history b
-            JOIN subscriptions s ON s.id = b.subscription_id
-            ORDER BY b.id DESC LIMIT 10
-        """)
-        recent_rows = c.fetchall()
+        c.execute(
+            "SELECT COALESCE(SUM(amount), 0) FROM billing_history "
+            "WHERE status = 'paid' AND strftime('%m-%Y', substr(payment_date,7,4)||'-'||substr(payment_date,1,2)||'-'||substr(payment_date,4,2)) = ?",
+            (this_month,),
+        )
+        revenue_this = float(c.fetchone()[0])
 
-        c.execute("""
-            SELECT s.id, s.username, s.email, s.phone, s.package, s.price,
-                   s.due_date, s.status, s.creation_date, s.is_active,
-                   lp.payment_date, lp.status AS lp_status
-            FROM subscriptions s
-            LEFT JOIN (
-                SELECT subscription_id, payment_date, status,
-                       ROW_NUMBER() OVER (PARTITION BY subscription_id ORDER BY payment_date DESC) AS rn
-                FROM billing_history
-            ) lp ON lp.subscription_id = s.id AND lp.rn = 1
-            WHERE s.is_active = 1
-        """)
-        all_rows = c.fetchall()
-
-    delinquent = []
-    due_soon = []
-    for row in all_rows:
-        sub = dict(row)
-        lp = {"payment_date": sub.pop("payment_date", None), "status": sub.pop("lp_status", None)}
-        display = determine_status(sub, lp if lp["payment_date"] else None)
-        if display == "delinquent":
-            delinquent.append({"id": sub["id"], "username": sub["username"], "due_date": sub["due_date"]})
-        try:
-            due_dt = datetime.strptime(sub["due_date"], DATE_FORMAT)
-            if now <= due_dt <= cutoff:
-                due_soon.append({"id": sub["id"], "username": sub["username"], "due_date": sub["due_date"]})
-        except (ValueError, TypeError):
-            pass
-
-    recent_payments = [
-        {"payment_date": r[0], "amount": r[1], "status": r[2], "username": r[3], "account_id": r[4]}
-        for r in recent_rows
-    ]
+        c.execute(
+            "SELECT COALESCE(SUM(amount), 0) FROM billing_history "
+            "WHERE status = 'paid' AND strftime('%m-%Y', substr(payment_date,7,4)||'-'||substr(payment_date,1,2)||'-'||substr(payment_date,4,2)) = ?",
+            (last_month,),
+        )
+        revenue_last = float(c.fetchone()[0])
 
     return {
-        "total_active": total_active,
-        "total_inactive": total_inactive,
-        "monthly_revenue": monthly_revenue,
-        "status_breakdown": {
-            "paid": status_counts.get("paid", 0),
-            "active": status_counts.get("active", 0),
-            "pending": status_counts.get("pending", 0),
-            "initial": status_counts.get("initial", 0),
-            "delinquent": status_counts.get("delinquent", 0),
-        },
-        "delinquent_count": len(delinquent),
-        "due_soon_count": len(due_soon),
-        "delinquent_accounts": delinquent[:10],
-        "due_soon_accounts": due_soon[:10],
-        "recent_payments": recent_payments,
+        "total_subscribers": total,
+        "active_subscribers": active,
+        "inactive_subscribers": inactive,
+        "due_today": due_today,
+        "overdue": overdue,
+        "revenue_this_month": revenue_this,
+        "revenue_last_month": revenue_last,
     }
 
 
@@ -304,30 +274,51 @@ def get_all_subscribers(
 
         rows = c.fetchall()
 
+    now = datetime.now()
     subscribers = []
     for row in rows:
         d = dict(row)
-        lp = {"payment_date": d.pop("payment_date"), "status": d.pop("lp_status")}
-        d["display_status"] = determine_status(d, lp if lp["payment_date"] else None)
-        d["grace_period_used"] = bool(d["grace_period_used"])
-        d["is_active"] = bool(d["is_active"])
-        d["price"] = float(d["price"])
-        subscribers.append(d)
+        lp_date = d.pop("payment_date", None)
+        lp_status = d.pop("lp_status", None)
+        lp = {"payment_date": lp_date, "status": lp_status} if lp_date else None
+        display = determine_status(d, lp)
+
+        pkg_id = str(d.get("package") or "")
+        pkg_name = CONFIG["PACKAGES"].get(pkg_id, (pkg_id, 0))[0]
+        price = float(d.get("price") or 0)
+
+        try:
+            due_dt = datetime.strptime(d["due_date"], DATE_FORMAT)
+            days_until_due = (due_dt - now).days
+        except (ValueError, TypeError):
+            days_until_due = None
+
+        subscribers.append({
+            "id": d["id"],
+            "username": d["username"],
+            "email": d.get("email"),
+            "phone": d.get("phone"),
+            "package_id": pkg_id,
+            "package_name": pkg_name,
+            "price": price,
+            "due_date": d["due_date"],
+            "status": display,
+            "days_until_due": days_until_due,
+            "last_payment": lp_date,
+            "is_active": 1 if d.get("is_active") else 0,
+        })
 
     if status_filter:
-        subscribers = [s for s in subscribers if s["display_status"] == status_filter]
+        subscribers = [s for s in subscribers if s["status"].lower() == status_filter.lower()]
 
-    valid_sorts = {"id", "username", "due_date", "price", "display_status"}
+    valid_sorts = {"id", "username", "due_date", "price", "status"}
     if sort_by not in valid_sorts:
         sort_by = "id"
 
     reverse = sort_dir == "desc"
     try:
         if sort_by == "due_date":
-            subscribers.sort(
-                key=lambda x: datetime.strptime(x["due_date"], DATE_FORMAT),
-                reverse=reverse,
-            )
+            subscribers.sort(key=lambda x: datetime.strptime(x["due_date"], DATE_FORMAT), reverse=reverse)
         elif sort_by == "username":
             subscribers.sort(key=lambda x: x["username"].lower(), reverse=reverse)
         else:
@@ -336,13 +327,21 @@ def get_all_subscribers(
         pass
 
     total = len(subscribers)
+    total_pages = max(1, (total + page_size - 1) // page_size)
     start = (page - 1) * page_size
     paginated = subscribers[start: start + page_size]
 
-    return {"items": paginated, "total": total, "page": page, "page_size": page_size}
+    return {
+        "subscribers": paginated,
+        "total": total,
+        "page": page,
+        "page_size": page_size,
+        "total_pages": total_pages,
+    }
 
 
 def get_subscriber_by_id(acc_id: str) -> Optional[Dict]:
+    now = datetime.now()
     with get_db() as conn:
         c = conn.cursor()
         c.execute(
@@ -355,9 +354,6 @@ def get_subscriber_by_id(acc_id: str) -> Optional[Dict]:
             return None
 
         sub = dict(row)
-        sub["price"] = float(sub["price"])
-        sub["grace_period_used"] = bool(sub["grace_period_used"])
-        sub["is_active"] = bool(sub["is_active"])
 
         c.execute(
             "SELECT payment_date, status FROM billing_history "
@@ -366,23 +362,32 @@ def get_subscriber_by_id(acc_id: str) -> Optional[Dict]:
         )
         lp_row = c.fetchone()
         lp = dict(lp_row) if lp_row else None
-        sub["display_status"] = determine_status(sub, lp)
+        display = determine_status(sub, lp)
 
-        c.execute(
-            "SELECT COALESCE(SUM(amount), 0) FROM billing_history "
-            "WHERE subscription_id = ? AND status = 'paid'",
-            (acc_id,),
-        )
-        sub["total_paid"] = float(c.fetchone()[0])
+        pkg_id = str(sub.get("package") or "")
+        pkg_name = CONFIG["PACKAGES"].get(pkg_id, (pkg_id, 0))[0]
+        price = float(sub.get("price") or 0)
 
-        c.execute(
-            "SELECT id, subscription_id, payment_date, amount, status FROM billing_history "
-            "WHERE subscription_id = ? ORDER BY payment_date DESC LIMIT ?",
-            (acc_id, MAX_PAYMENT_HISTORY),
-        )
-        sub["payment_history"] = [dict(r) for r in c.fetchall()]
+        try:
+            due_dt = datetime.strptime(sub["due_date"], DATE_FORMAT)
+            days_until_due = (due_dt - now).days
+        except (ValueError, TypeError):
+            days_until_due = None
 
-    return sub
+        return {
+            "id": sub["id"],
+            "username": sub["username"],
+            "email": sub.get("email"),
+            "phone": sub.get("phone"),
+            "package_id": pkg_id,
+            "package_name": pkg_name,
+            "price": price,
+            "due_date": sub["due_date"],
+            "status": display,
+            "days_until_due": days_until_due,
+            "last_payment": lp["payment_date"] if lp else None,
+            "is_active": 1 if sub.get("is_active") else 0,
+        }
 
 
 def create_subscriber(

@@ -25,23 +25,24 @@ class SubscriberUpdate(BaseModel):
 class Subscriber(BaseModel):
     id: str
     username: str
-    email: Optional[str]
-    phone: Optional[str]
-    package: str
+    email: Optional[str] = None
+    phone: Optional[str] = None
+    package_id: str
+    package_name: str
     price: float
     due_date: str
-    status: str
-    display_status: str
-    creation_date: Optional[str]
-    grace_period_used: bool
-    is_active: bool
+    status: str                        # resolved display status
+    days_until_due: Optional[int] = None
+    last_payment: Optional[str] = None
+    is_active: int                     # 0 or 1
 
 
 class SubscriberList(BaseModel):
-    items: List[Subscriber]
+    subscribers: List[Subscriber]
     total: int
     page: int
     page_size: int
+    total_pages: int
 
 
 # ── Payments ───────────────────────────────────────────────
@@ -49,7 +50,7 @@ class SubscriberList(BaseModel):
 class PaymentCreate(BaseModel):
     subscription_id: str
     amount: float
-    status: str                      # paid | failed | grace_period
+    status: str                        # paid | failed | grace_period
     advance_days: Optional[int] = None
     custom_due_date: Optional[str] = None
 
@@ -60,48 +61,19 @@ class Payment(BaseModel):
     payment_date: str
     amount: float
     status: str
+    new_due_date: Optional[str] = None
 
 
 # ── Dashboard ──────────────────────────────────────────────
 
-class StatusBreakdown(BaseModel):
-    paid: int = 0
-    active: int = 0
-    pending: int = 0
-    initial: int = 0
-    delinquent: int = 0
-
-
-class RecentPayment(BaseModel):
-    payment_date: str
-    amount: float
-    status: str
-    username: str
-    account_id: str
-
-
-class DelinquentAccount(BaseModel):
-    id: str
-    username: str
-    due_date: str
-
-
-class DueSoonAccount(BaseModel):
-    id: str
-    username: str
-    due_date: str
-
-
 class DashboardStats(BaseModel):
-    total_active: int
-    total_inactive: int
-    monthly_revenue: float
-    status_breakdown: StatusBreakdown
-    delinquent_count: int
-    due_soon_count: int
-    delinquent_accounts: List[DelinquentAccount]
-    due_soon_accounts: List[DueSoonAccount]
-    recent_payments: List[RecentPayment]
+    total_subscribers: int
+    active_subscribers: int
+    inactive_subscribers: int
+    due_today: int
+    overdue: int
+    revenue_this_month: float
+    revenue_last_month: float
 
 
 # ── Risk ───────────────────────────────────────────────────
@@ -111,16 +83,17 @@ class RiskPrediction(BaseModel):
     username: str
     risk_score: int
     risk_level: str
-    reasons: List[str]
+    flags: List[str]
     suggested_actions: List[str]
-    due_date: str
-    due_in_days: Optional[int] = None
+    days_overdue: Optional[int] = None
 
 
 class RiskReport(BaseModel):
     predictions: List[RiskPrediction]
     generated_at: str
-    total: int
+    model: str
+    threshold_days: int
+    total_at_risk: int
     high_count: int
     medium_count: int
 
@@ -128,16 +101,16 @@ class RiskReport(BaseModel):
 # ── Bulk Operations ────────────────────────────────────────
 
 class BulkDueDateUpdate(BaseModel):
-    account_ids: Optional[List[str]] = None   # None = all active
+    account_ids: Optional[List[str]] = None
     status_filter: Optional[str] = None
     package_filter: Optional[str] = None
     advance_days: int
 
 
 class BulkUpdateResult(BaseModel):
-    updated: int
-    preview: List[Dict[str, Any]]
-    confirmed: bool
+    preview: bool
+    affected: int
+    accounts: List[str]
 
 
 # ── Generic ────────────────────────────────────────────────
