@@ -4,6 +4,20 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.2.6] - 2026-03-08
+
+### Fixed
+- **Import broken (422 error)** — `data: list` in FastAPI route was not recognised as a request body; changed to `List[Any] = Body(...)` so JSON arrays are correctly parsed
+- **Import silently failed** — frontend `catch` block only handled `SyntaxError`; API errors were swallowed after the axios toast; now all error paths show an appropriate toast
+- **`null` creation_date skipped** — `dict.get()` returns `None` (not the default) when the key exists but is `null`; fixed with `sub.get("creation_date") or default`
+- **Import result feedback** — 0 imported shows error toast with first skip reason; partial import shows info toast and logs all skip reasons to console; full success shows count
+
+### Changed
+- `import_subscribers()` returns `skip_reasons` list explaining why each entry was skipped
+- Import validates `price is None` separately so `price=0` is accepted
+
+---
+
 ## [2.2.5] - 2026-03-08
 
 ### Added

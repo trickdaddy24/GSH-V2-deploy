@@ -159,7 +159,9 @@ export const exportSubscribers = () =>
   api.get<unknown[]>('/subscribers/export/json').then(r => r.data)
 
 export const importSubscribers = (data: unknown[]) =>
-  api.post<{ imported: number; skipped: number }>('/subscribers/import/json', data).then(r => r.data)
+  api.post<{ imported: number; skipped: number; skip_reasons?: string[]; error?: string }>(
+    '/subscribers/import/json', data
+  ).then(r => r.data)
 
 export const triggerBackup = () =>
   api.post('/notifications/backup').then(r => r.data)

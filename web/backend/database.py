@@ -654,23 +654,33 @@ def export_subscribers() -> List[Dict]:
 
 def import_subscribers(data: List[Dict]) -> Dict:
     imported, skipped = 0, 0
+    skip_reasons: List[str] = []
     try:
         with get_db() as conn:
             c = conn.cursor()
-            for item in data:
+            for i, item in enumerate(data):
                 try:
-                    username = item["customer"]["name"]
-                    email = item["customer"]["contact"].get("email")
-                    phone = item["customer"]["contact"].get("phone")
-                    plan = item["subscription"]["plan"]
-                    price = item["subscription"]["price"]
-                    due_date = item["subscription"]["due_date"]
-                    creation_date = item["subscription"].get(
-                        "creation_date", datetime.now().strftime(DATE_FORMAT)
-                    )
-                    acc_id = item.get("id") or generate_account_id()
+                    username  = item["customer"]["name"]
+                    email     = item["customer"]["contact"].get("email")
+                    phone     = item["customer"]["contact"].get("phone")
+                    sub       = item["subscription"]
+                    plan      = sub["plan"]
+                    price     = sub["price"]
+                    due_date  = sub["due_date"]
+                    # null creation_date → use today; missing key → use today
+                    creation_date = sub.get("creation_date") or datetime.now().strftime(DATE_FORMAT)
+                    acc_id    = item.get("id") or generate_account_id()
 
-                    if not all([username, plan, price, due_date]) or not parse_date(due_date):
+                    if not username or not plan or not due_date:
+                        skip_reasons.append(f"#{i}: missing required field (username/plan/due_date)")
+                        skipped += 1
+                        continue
+                    if price is None:
+                        skip_reasons.append(f"#{i} {username}: missing price")
+                        skipped += 1
+                        continue
+                    if not parse_date(due_date):
+                        skip_reasons.append(f"#{i} {username}: unrecognised due_date '{due_date}'")
                         skipped += 1
                         continue
 
@@ -678,15 +688,17 @@ def import_subscribers(data: List[Dict]) -> Dict:
                         "INSERT OR REPLACE INTO subscriptions "
                         "(id, username, email, phone, package, price, due_date, status, creation_date, is_active) "
                         "VALUES (?, ?, ?, ?, ?, ?, ?, 'initial', ?, 1)",
-                        (acc_id, username, email, phone, plan, price, due_date, creation_date),
+                        (acc_id, username, email or None, phone or None,
+                         plan, price, due_date, creation_date),
                     )
                     imported += 1
-                except (KeyError, ValueError):
+                except (KeyError, TypeError) as e:
+                    skip_reasons.append(f"#{i}: bad structure — {e}")
                     skipped += 1
             conn.commit()
     except sqlite3.Error as e:
-        return {"imported": imported, "skipped": skipped, "error": str(e)}
-    return {"imported": imported, "skipped": skipped}
+        return {"imported": imported, "skipped": skipped, "error": str(e), "skip_reasons": skip_reasons}
+    return {"imported": imported, "skipped": skipped, "skip_reasons": skip_reasons}
 
 
 # ── Backup ─────────────────────────────────────────────────────────────────────

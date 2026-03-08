@@ -1,5 +1,5 @@
-from fastapi import APIRouter, Depends, HTTPException, Query
-from typing import Optional
+from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from typing import Any, List, Optional
 from auth import verify_api_key
 from database import (
     get_all_subscribers, get_subscriber_by_id, create_subscriber,
@@ -100,7 +100,7 @@ def export():
 
 
 @router.post("/import/json", dependencies=[Depends(verify_api_key)])
-def import_json(data: list):
+def import_json(data: List[Any] = Body(...)):
     return import_subscribers(data)
 
 

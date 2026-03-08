@@ -83,17 +83,35 @@ export default function Subscribers() {
   const handleImport = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0]
     if (!file) return
+    e.target.value = ''
+    let json: unknown[]
     try {
       const text = await file.text()
-      const json = JSON.parse(text)
-      if (!Array.isArray(json)) { addToast('Invalid file: expected a JSON array', 'error'); return }
-      const result = await importSubscribers(json)
-      addToast(`Imported ${result.imported}, skipped ${result.skipped}`, 'success')
-      qc.invalidateQueries({ queryKey: ['subscribers'] })
-    } catch (err) {
-      if (err instanceof SyntaxError) addToast('Invalid JSON file', 'error')
+      const parsed = JSON.parse(text)
+      if (!Array.isArray(parsed)) { addToast('Invalid file: expected a JSON array', 'error'); return }
+      json = parsed
+    } catch {
+      addToast('Invalid JSON file — could not parse', 'error')
+      return
     }
-    e.target.value = ''
+    try {
+      const result = await importSubscribers(json)
+      if (result.error) {
+        addToast(`Import failed: ${result.error}`, 'error')
+      } else if (result.imported === 0) {
+        const reason = result.skip_reasons?.[0] ?? 'check file format'
+        addToast(`Nothing imported — ${reason}`, 'error')
+      } else if (result.skipped > 0) {
+        addToast(`Imported ${result.imported}, skipped ${result.skipped} — see console for details`, 'info')
+        console.warn('Skipped entries:', result.skip_reasons)
+        qc.invalidateQueries({ queryKey: ['subscribers'] })
+      } else {
+        addToast(`Successfully imported ${result.imported} subscriber${result.imported !== 1 ? 's' : ''}`, 'success')
+        qc.invalidateQueries({ queryKey: ['subscribers'] })
+      }
+    } catch {
+      // axios interceptor already showed the error toast
+    }
   }
 
   return (
