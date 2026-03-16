@@ -23,7 +23,7 @@ services:
       - gsh
     labels:
       traefik.enable: "true"
-      traefik.http.routers.gsh.rule: "Host(`gsh.stunna.xyz`)"
+      traefik.http.routers.gsh.rule: "Host(`gsh.aaa.stunna.xyz`)"
       traefik.http.routers.gsh.entrypoints: "websecure"
       traefik.http.routers.gsh.tls.certresolver: "cfdns"
       traefik.http.routers.gsh.middlewares: "authelia@docker"
