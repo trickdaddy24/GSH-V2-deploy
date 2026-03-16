@@ -8,6 +8,7 @@ services:
       - gsh_data:/data
     environment:
       - DB_PATH=/data/OnDemand_subscriptions.db
+      - ADMIN_PASSWORD_HASH=$$2b$$12$$jji7Esc/elyNh8ivtpEdROG65uyKl7ZJ8TUcKlgeapsu2GMF/upTW
     networks:
       - gsh
 
