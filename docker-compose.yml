@@ -26,6 +26,7 @@ services:
       traefik.http.routers.gsh.rule: "Host(`gsh.stunna.xyz`)"
       traefik.http.routers.gsh.entrypoints: "websecure"
       traefik.http.routers.gsh.tls.certresolver: "cfdns"
+      traefik.http.routers.gsh.middlewares: "authelia@docker"
       traefik.http.services.gsh.loadbalancer.server.port: "80"
       traefik.docker.network: "saltbox"
 
