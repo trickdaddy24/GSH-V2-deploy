@@ -1,0 +1,37 @@
+services:
+  gsh-backend:
+    build: ./web/backend
+    container_name: gsh-backend
+    restart: unless-stopped
+    env_file: web/backend/.env
+    volumes:
+      - gsh_data:/data
+    environment:
+      - DB_PATH=/data/OnDemand_subscriptions.db
+    networks:
+      - gsh
+
+  gsh-frontend:
+    build: ./web/frontend
+    container_name: gsh-frontend
+    restart: unless-stopped
+    depends_on:
+      - gsh-backend
+    networks:
+      - saltbox
+      - gsh
+    labels:
+      traefik.enable: "true"
+      traefik.http.routers.gsh.rule: "Host(`gsh.stunna.xyz`)"
+      traefik.http.routers.gsh.entrypoints: "websecure"
+      traefik.http.routers.gsh.tls.certresolver: "cfdns"
+      traefik.http.services.gsh.loadbalancer.server.port: "80"
+      traefik.docker.network: "saltbox"
+
+volumes:
+  gsh_data:
+
+networks:
+  saltbox:
+    external: true
+  gsh:

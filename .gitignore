@@ -41,6 +41,13 @@ env/
 *.sublime-project
 *.sublime-workspace
 
+# Node
+node_modules/
+package-lock.json
+
+# Docker
+docker-compose.override.yml
+
 # OS
 .DS_Store
 Thumbs.db
