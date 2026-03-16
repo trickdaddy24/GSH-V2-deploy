@@ -1,7 +1,8 @@
-import { NavLink, Outlet } from 'react-router-dom'
-import { LayoutDashboard, Users, CreditCard, ShieldAlert, Shield, Sun, Moon, CalendarClock, Settings } from 'lucide-react'
+import { NavLink, Outlet, useNavigate } from 'react-router-dom'
+import { LayoutDashboard, Users, CreditCard, ShieldAlert, Shield, Sun, Moon, CalendarClock, Settings, LogOut } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useTheme } from '../lib/ThemeContext'
+import { clearToken } from '../lib/auth'
 
 const NAV = [
   { to: '/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
@@ -14,6 +15,12 @@ const NAV = [
 
 export default function Layout() {
   const { theme, toggle } = useTheme()
+  const navigate = useNavigate()
+
+  function handleLogout() {
+    clearToken()
+    navigate('/login', { replace: true })
+  }
 
   return (
     <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-slate-950">
@@ -45,14 +52,23 @@ export default function Layout() {
         </nav>
 
         <div className="border-t border-gray-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
-          <span className="text-xs text-gray-400 dark:text-slate-600">GSH Web v2.2.4</span>
-          <button
-            onClick={toggle}
-            className="rounded-md p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
-            title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
-            {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-          </button>
+          <span className="text-xs text-gray-400 dark:text-slate-600">GSH Web v2.2.6</span>
+          <div className="flex items-center gap-1">
+            <button
+              onClick={toggle}
+              className="rounded-md p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
+              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
+            >
+              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
+            </button>
+            <button
+              onClick={handleLogout}
+              className="rounded-md p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:text-slate-500 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+              title="Sign out"
+            >
+              <LogOut size={15} />
+            </button>
+          </div>
         </div>
       </aside>
 

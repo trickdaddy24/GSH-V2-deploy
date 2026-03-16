@@ -10,6 +10,7 @@ from fastapi.responses import JSONResponse
 from config import CONFIG
 from database import migrate_db
 from routers import dashboard, subscribers, payments, risk, notifications
+import auth_router
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -59,12 +60,14 @@ app.add_middleware(
         "http://localhost:5173",
         "http://localhost:4173",
         "http://127.0.0.1:5173",
+        "https://gsh.stunna.xyz",
     ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+app.include_router(auth_router.router,    prefix="/api/auth",           tags=["Auth"])
 app.include_router(dashboard.router,      prefix="/api/dashboard",      tags=["Dashboard"])
 app.include_router(subscribers.router,    prefix="/api/subscribers",    tags=["Subscribers"])
 app.include_router(payments.router,       prefix="/api/payments",       tags=["Payments"])
@@ -107,4 +110,4 @@ def debug():
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run("main:app", host="0.0.0.0", port=8898, reload=True)
+    uvicorn.run("main:app", host="0.0.0.0", port=9000, reload=True)

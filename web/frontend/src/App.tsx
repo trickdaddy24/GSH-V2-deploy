@@ -1,6 +1,8 @@
 import { useEffect } from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 import Layout from './components/Layout'
+import ProtectedRoute from './components/ProtectedRoute'
+import Login from './pages/Login'
 import Dashboard from './pages/Dashboard'
 import Subscribers from './pages/Subscribers'
 import SubscriberDetail from './pages/SubscriberDetail'
@@ -21,15 +23,18 @@ export default function App() {
   return (
     <BrowserRouter>
       <Routes>
-        <Route path="/" element={<Layout />}>
-          <Route index element={<Navigate to="/dashboard" replace />} />
-          <Route path="dashboard" element={<Dashboard />} />
-          <Route path="subscribers" element={<Subscribers />} />
-          <Route path="subscribers/:accId" element={<SubscriberDetail />} />
-          <Route path="payments" element={<Payments />} />
-          <Route path="risk" element={<Risk />} />
-          <Route path="bulk-update" element={<BulkUpdate />} />
-          <Route path="settings" element={<Settings />} />
+        <Route path="/login" element={<Login />} />
+        <Route element={<ProtectedRoute />}>
+          <Route path="/" element={<Layout />}>
+            <Route index element={<Navigate to="/dashboard" replace />} />
+            <Route path="dashboard" element={<Dashboard />} />
+            <Route path="subscribers" element={<Subscribers />} />
+            <Route path="subscribers/:accId" element={<SubscriberDetail />} />
+            <Route path="payments" element={<Payments />} />
+            <Route path="risk" element={<Risk />} />
+            <Route path="bulk-update" element={<BulkUpdate />} />
+            <Route path="settings" element={<Settings />} />
+          </Route>
         </Route>
       </Routes>
     </BrowserRouter>

@@ -1,11 +1,9 @@
 import axios from 'axios'
 import type { ToastType } from './ToastContext'
-
-const API_KEY = import.meta.env.VITE_API_KEY ?? ''
+import { getToken, clearToken } from './auth'
 
 export const api = axios.create({
   baseURL: '/api',
-  headers: API_KEY ? { 'X-API-Key': API_KEY } : {},
 })
 
 // Allows App to register the toast function after mount
@@ -13,9 +11,22 @@ type ToastFn = (msg: string, type?: ToastType) => void
 let _toast: ToastFn = () => {}
 export const registerToast = (fn: ToastFn) => { _toast = fn }
 
+api.interceptors.request.use(config => {
+  const token = getToken()
+  if (token) {
+    config.headers.Authorization = `Bearer ${token}`
+  }
+  return config
+})
+
 api.interceptors.response.use(
   res => res,
   err => {
+    if (err.response?.status === 401) {
+      clearToken()
+      window.location.href = '/login'
+      return Promise.reject(new Error('Session expired. Please log in again.'))
+    }
     const detail = err.response?.data?.detail
     const msg = Array.isArray(detail)
       ? detail.map((d: { msg: string }) => d.msg).join('; ')
