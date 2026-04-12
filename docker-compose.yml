@@ -1,6 +1,6 @@
 services:
   gsh-backend:
-    image: ghcr.io/trickdaddy24/gsh-v2-deploy/backend:latest
+    build: ./web/backend
     container_name: gsh-backend
     restart: unless-stopped
     env_file: web/backend/.env
@@ -13,7 +13,7 @@ services:
       - gsh
 
   gsh-frontend:
-    image: ghcr.io/trickdaddy24/gsh-v2-deploy/frontend:latest
+    build: ./web/frontend
     container_name: gsh-frontend
     restart: unless-stopped
     depends_on:
