@@ -117,9 +117,9 @@ export default function Subscribers() {
   return (
     <div className="space-y-4">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">
+        <h1 className="text-xl font-bold text-gsh-text dark:text-[#e0e6f0]">
           Subscribers
-          {data && <span className="ml-2 text-sm font-normal text-gray-400 dark:text-slate-500">({data.total})</span>}
+          {data && <span className="ml-2 text-sm font-normal text-gsh-muted dark:text-[#8899aa]">({data.total})</span>}
         </h1>
         <div className="flex gap-2">
           <Button size="sm" variant="secondary" onClick={handleExport}>
@@ -140,7 +140,7 @@ export default function Subscribers() {
       {/* Filters */}
       <div className="flex flex-wrap gap-2">
         <div className="relative flex-1 min-w-48">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gsh-muted dark:text-[#8899aa]" />
           <Input
             className="pl-8"
             placeholder="Search username…"
@@ -149,16 +149,16 @@ export default function Subscribers() {
           />
         </div>
         <select
-          className="rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500
-                     bg-white border-gray-300 text-gray-700
-                     dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+          className="rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gsh-accent
+                     bg-white border-gsh-border text-gsh-muted
+                     dark:bg-[#1a1f2e] dark:border-[#2e3650] dark:text-[#8899aa]"
           value={statusFilter}
           onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
         >
           <option value="">All statuses</option>
           {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
-        <label className="flex items-center gap-2 text-sm text-gray-500 dark:text-slate-400 cursor-pointer">
+        <label className="flex items-center gap-2 text-sm text-gsh-muted dark:text-[#8899aa] cursor-pointer">
           <input
             type="checkbox"
             className="rounded"
@@ -170,16 +170,16 @@ export default function Subscribers() {
       </div>
 
       {/* Table */}
-      <div className="rounded-xl border border-gray-200 dark:border-slate-800 overflow-hidden">
+      <div className="rounded-xl border border-gsh-border dark:border-[#2e3650] overflow-hidden">
         <table className="w-full text-sm">
-          <thead className="bg-gray-50 dark:bg-slate-900">
+          <thead className="bg-gsh-card dark:bg-[#242938]">
             <tr>
               {COLUMNS.map(col => (
                 <th
                   key={col.label}
                   onClick={() => handleSort(col.key)}
-                  className={`px-3 py-2 text-left text-xs font-medium text-gray-500 dark:text-slate-500 uppercase tracking-wide select-none
-                    ${col.key ? 'cursor-pointer hover:text-gray-800 dark:hover:text-slate-300' : ''}`}
+                  className={`px-3 py-2 text-left text-xs font-medium text-gsh-muted dark:text-[#8899aa] uppercase tracking-wide select-none
+                    ${col.key ? 'cursor-pointer hover:text-gsh-text dark:hover:text-[#e0e6f0]' : ''}`}
                 >
                   <span className="inline-flex items-center gap-1">
                     {col.label}
@@ -191,20 +191,20 @@ export default function Subscribers() {
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100 dark:divide-slate-800 bg-white dark:bg-slate-950">
+          <tbody className="divide-y divide-gsh-border dark:divide-[#2e3650] bg-white dark:bg-[#1a1f2e]">
             {isLoading ? (
-              <tr><td colSpan={COLUMNS.length} className="px-3 py-6 text-center text-gray-400 dark:text-slate-500">Loading…</td></tr>
+              <tr><td colSpan={COLUMNS.length} className="px-3 py-6 text-center text-gsh-muted dark:text-[#8899aa]">Loading…</td></tr>
             ) : !data?.subscribers.length ? (
-              <tr><td colSpan={COLUMNS.length} className="px-3 py-6 text-center text-gray-400 dark:text-slate-500">No subscribers found.</td></tr>
+              <tr><td colSpan={COLUMNS.length} className="px-3 py-6 text-center text-gsh-muted dark:text-[#8899aa]">No subscribers found.</td></tr>
             ) : (
               data.subscribers.map(sub => (
                 <tr
                   key={sub.id}
-                  className="hover:bg-gray-50 dark:hover:bg-slate-800/50 cursor-pointer transition-colors"
+                  className="hover:bg-gsh-card dark:hover:bg-[rgba(255,255,255,0.03)] cursor-pointer transition-colors"
                   onClick={() => navigate(`/subscribers/${sub.id}`)}
                 >
                   {COLUMNS.map(col => (
-                    <td key={col.label} className="px-3 py-2.5 text-gray-700 dark:text-slate-300">
+                    <td key={col.label} className="px-3 py-2.5 text-gsh-text dark:text-[#e0e6f0]">
                       {cellValue(sub, col.key, col.label)}
                     </td>
                   ))}
@@ -217,7 +217,7 @@ export default function Subscribers() {
 
       {/* Pagination */}
       {data && data.total_pages > 1 && (
-        <div className="flex items-center justify-between text-sm text-gray-500 dark:text-slate-400">
+        <div className="flex items-center justify-between text-sm text-gsh-muted dark:text-[#8899aa]">
           <span>{data.total} subscribers &bull; page {data.page} of {data.total_pages}</span>
           <div className="flex gap-1">
             <Button variant="ghost" size="sm" disabled={page <= 1} onClick={() => setPage(p => p - 1)}>
@@ -252,27 +252,27 @@ function AddForm({ onSubmit, loading }: { onSubmit: (d: Parameters<typeof create
   }
 
   return (
-    <form onSubmit={submit} className="rounded-xl border border-gray-200 dark:border-slate-700 bg-white dark:bg-slate-900 p-4 grid grid-cols-2 gap-3 md:grid-cols-3">
+    <form onSubmit={submit} className="rounded-xl border border-gsh-border dark:border-[#2e3650] bg-white dark:bg-[#242938] p-4 grid grid-cols-2 gap-3 md:grid-cols-3">
       <div>
-        <label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Username *</label>
+        <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Username *</label>
         <Input required value={form.username} onChange={set('username')} placeholder="john_doe" />
       </div>
       <div>
-        <label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Email</label>
+        <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Email</label>
         <Input type="email" value={form.email} onChange={set('email')} placeholder="john@example.com" />
       </div>
       <div>
-        <label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Phone</label>
+        <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Phone</label>
         <Input value={form.phone} onChange={set('phone')} placeholder="+1 555-0100" />
       </div>
       <div>
-        <label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Package *</label>
+        <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Package *</label>
         <select
           required
           value={form.package_id}
           onChange={set('package_id')}
-          className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500
-                     bg-white border-gray-300 text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+          className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gsh-accent
+                     bg-white border-gsh-border text-gsh-text dark:bg-[#1a1f2e] dark:border-[#2e3650] dark:text-[#e0e6f0]"
         >
           {PACKAGES.map(p => (
             <option key={p.id} value={p.id}>
@@ -282,12 +282,12 @@ function AddForm({ onSubmit, loading }: { onSubmit: (d: Parameters<typeof create
         </select>
       </div>
       <div>
-        <label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Due Date *</label>
+        <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Due Date *</label>
         <Input required type="date" value={form.due_date} onChange={set('due_date')} />
       </div>
       {selectedPkg?.price === null && (
         <div>
-          <label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Custom Price ($) *</label>
+          <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Custom Price ($) *</label>
           <Input required type="number" step="0.01" value={form.custom_price} onChange={set('custom_price')} placeholder="e.g. 20" />
         </div>
       )}
