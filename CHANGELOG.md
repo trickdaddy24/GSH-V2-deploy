@@ -4,6 +4,20 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.3.0] — 2026-04-18
+
+### Changed
+- Replaced `brand.*` sky-blue Tailwind tokens with `gsh.*` design token namespace
+- Dark mode: Saltbox-inspired deep navy palette (`#1a1f2e` bg, `#242938` cards, `#2e3650` borders)
+- Light mode: clean white/off-white Stripe-like palette
+- Accent color: LoginX Electric Purple `#8A4DFF` (buttons, active nav, stat values)
+- Active nav indicator: neon cyan left border `#00E0FF` in dark mode
+- Badges: lavender `#BFA4FF` default tint (dark), purple `#8A4DFF` tint (light)
+- Code blocks: Saltbox-style near-black `#0d1117` background (dark), `#f6f8fa` (light)
+- Re-themed: Layout, Card, Button, Badge, Input, StatCard, Login, all pages
+
+---
+
 ## [2.2.6] - 2026-03-08
 
 ### Fixed
