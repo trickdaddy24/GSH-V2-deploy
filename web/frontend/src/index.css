@@ -4,9 +4,15 @@
 
 @layer base {
   body {
-    @apply bg-gray-50 text-gray-900 antialiased;
+    @apply bg-gsh-bg text-gsh-text antialiased;
   }
   .dark body {
-    @apply bg-slate-950 text-slate-100;
+    @apply bg-[#1a1f2e] text-[#e0e6f0];
+  }
+  pre, code {
+    font-family: 'JetBrains Mono', 'Fira Code', 'Cascadia Code', ui-monospace, monospace;
+  }
+  pre {
+    @apply bg-gsh-code-bg dark:bg-[#0d1117] border border-gsh-border dark:border-[#2e3650] rounded-md p-3 text-sm overflow-x-auto;
   }
 }
