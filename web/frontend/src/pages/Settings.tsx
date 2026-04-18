@@ -41,15 +41,14 @@ export default function Settings() {
   const poTest  = useTest(testPushover, 'Pushover')
   const emTest  = useTest(testEmail,    'Email')
 
-  if (isLoading) return <p className="text-gray-400 dark:text-slate-400">Loading settings…</p>
+  if (isLoading) return <p className="text-gsh-muted dark:text-[#8899aa]">Loading settings…</p>
   if (!data) return <p className="text-red-500">Failed to load settings.</p>
 
   return (
     <div className="space-y-6 max-w-2xl">
-      <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Notification Settings</h1>
-      <p className="text-sm text-gray-500 dark:text-slate-400">
-        Changes save to <code className="text-xs bg-gray-100 dark:bg-slate-800 px-1 py-0.5 rounded">.env</code> and
-        take effect immediately without restart.
+      <h1 className="text-xl font-bold text-gsh-text dark:text-[#e0e6f0]">Notification Settings</h1>
+      <p className="text-sm text-gsh-muted dark:text-[#8899aa]">
+        Changes save to <code className="text-xs bg-gsh-code-bg dark:bg-[#0d1117] border border-gsh-border dark:border-[#2e3650] px-1 py-0.5 rounded">.env</code> and take effect immediately without restart.
       </p>
 
       <TelegramCard  initial={data.telegram}  onSave={v => saveMut.mutate({ telegram: v })}  loading={saveMut.isPending}  onTest={() => tgTest.mutate()}  testing={tgTest.isPending} />
@@ -68,7 +67,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
       type="button"
       onClick={() => onChange(!checked)}
       className={`relative inline-flex h-5 w-9 items-center rounded-full transition-colors focus:outline-none ${
-        checked ? 'bg-brand-600' : 'bg-gray-300 dark:bg-slate-700'
+        checked ? 'bg-gsh-accent' : 'bg-gray-300 dark:bg-[rgba(255,255,255,0.1)]'
       }`}
     >
       <span className={`inline-block h-3.5 w-3.5 transform rounded-full bg-white shadow transition-transform ${
@@ -81,7 +80,7 @@ function Toggle({ checked, onChange }: { checked: boolean; onChange: (v: boolean
 function Field({ label, children }: { label: string; children: React.ReactNode }) {
   return (
     <div>
-      <label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">{label}</label>
+      <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">{label}</label>
       {children}
     </div>
   )
@@ -101,7 +100,7 @@ function SecretInput({ value, onChange, placeholder }: { value: string; onChange
       <button
         type="button"
         onClick={() => setShow(v => !v)}
-        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gray-400 hover:text-gray-600 dark:text-slate-500 dark:hover:text-slate-300"
+        className="absolute right-2.5 top-1/2 -translate-y-1/2 text-gsh-muted hover:text-gsh-text dark:text-[#8899aa] dark:hover:text-[#e0e6f0]"
       >
         {show ? <EyeOff size={14} /> : <Eye size={14} />}
       </button>
