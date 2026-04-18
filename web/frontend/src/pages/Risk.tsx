@@ -87,7 +87,7 @@ export default function Risk() {
 
 function MetaStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-white dark:bg-[#242938] border border-gray-200 dark:border-[#2e3650] px-4 py-3">
+    <div className="rounded-lg bg-white dark:bg-[#242938] border border-gsh-border dark:border-[#2e3650] px-4 py-3">
       <p className="text-xs text-gsh-muted dark:text-[#8899aa] uppercase tracking-wide">{label}</p>
       <p className="text-gsh-text dark:text-[#e0e6f0] font-medium mt-0.5">{value}</p>
     </div>
