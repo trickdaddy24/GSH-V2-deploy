@@ -5,13 +5,17 @@ export default {
   theme: {
     extend: {
       colors: {
-        brand: {
-          50:  '#f0f9ff',
-          100: '#e0f2fe',
-          500: '#0ea5e9',
-          600: '#0284c7',
-          700: '#0369a1',
-          900: '#0c4a6e',
+        gsh: {
+          bg:             '#FFFFFF',
+          card:           '#F9F9FB',
+          border:         '#E5E7EB',
+          accent:         '#8A4DFF',
+          'accent-hover': '#7A3DEF',
+          muted:          '#6B7280',
+          text:           '#0B0F2A',
+          cyan:           '#2EC7FF',
+          lavender:       '#BFA4FF',
+          'code-bg':      '#f6f8fa',
         },
       },
     },
