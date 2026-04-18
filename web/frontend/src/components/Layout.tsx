@@ -23,12 +23,12 @@ export default function Layout() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gray-50 dark:bg-slate-950">
+    <div className="flex h-screen overflow-hidden bg-gsh-bg dark:bg-[#1a1f2e]">
       {/* Sidebar */}
-      <aside className="flex w-56 flex-col border-r border-gray-200 dark:border-slate-800 bg-white dark:bg-slate-900">
+      <aside className="flex w-56 flex-col border-r border-gsh-border dark:border-[#2e3650] bg-white dark:bg-[#242938]">
         <div className="flex items-center gap-2 px-4 py-5">
-          <Shield size={22} className="text-brand-500" />
-          <span className="font-bold text-gray-900 dark:text-slate-100 tracking-tight">GuardianStreams</span>
+          <Shield size={22} className="text-gsh-accent" />
+          <span className="font-bold text-gsh-text dark:text-[#e0e6f0] tracking-tight">GuardianStreams</span>
         </div>
 
         <nav className="flex-1 space-y-0.5 px-2 py-2">
@@ -40,8 +40,8 @@ export default function Layout() {
                 cn(
                   'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
                   isActive
-                    ? 'bg-brand-600 text-white'
-                    : 'text-gray-600 dark:text-slate-400 hover:bg-gray-100 dark:hover:bg-slate-800 hover:text-gray-900 dark:hover:text-slate-100',
+                    ? 'bg-[rgba(138,77,255,0.08)] dark:bg-[rgba(138,77,255,0.12)] text-gsh-accent dark:text-[#e0e6f0] border-l-2 border-gsh-accent dark:border-gsh-cyan pl-[10px]'
+                    : 'text-gsh-muted dark:text-[#8899aa] hover:bg-gray-100 dark:hover:bg-[rgba(255,255,255,0.04)] hover:text-gsh-text dark:hover:text-[#e0e6f0]',
                 )
               }
             >
@@ -51,19 +51,19 @@ export default function Layout() {
           ))}
         </nav>
 
-        <div className="border-t border-gray-200 dark:border-slate-800 px-4 py-3 flex items-center justify-between">
-          <span className="text-xs text-gray-400 dark:text-slate-600">GSH Web v2.2.6</span>
+        <div className="border-t border-gsh-border dark:border-[#2e3650] px-4 py-3 flex items-center justify-between">
+          <span className="text-xs text-gsh-border dark:text-[#2e3650] font-mono">GSH Web v2.3.0</span>
           <div className="flex items-center gap-1">
             <button
               onClick={toggle}
-              className="rounded-md p-1.5 text-gray-400 hover:text-gray-700 hover:bg-gray-100 dark:text-slate-500 dark:hover:text-slate-200 dark:hover:bg-slate-800 transition-colors"
+              className="rounded-md p-1.5 text-gsh-muted hover:text-gsh-text hover:bg-gray-100 dark:text-[#8899aa] dark:hover:text-[#e0e6f0] dark:hover:bg-[rgba(255,255,255,0.06)] transition-colors"
               title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
             >
               {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
             </button>
             <button
               onClick={handleLogout}
-              className="rounded-md p-1.5 text-gray-400 hover:text-red-600 hover:bg-red-50 dark:text-slate-500 dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors"
+              className="rounded-md p-1.5 text-gsh-muted hover:text-red-600 hover:bg-red-50 dark:text-[#8899aa] dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors"
               title="Sign out"
             >
               <LogOut size={15} />
