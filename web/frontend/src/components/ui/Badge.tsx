@@ -6,7 +6,7 @@ interface BadgeProps extends HTMLAttributes<HTMLSpanElement> {
 }
 
 const variants = {
-  default: 'bg-[rgba(138,77,255,0.08)] text-gsh-accent dark:bg-[rgba(138,77,255,0.15)] dark:text-gsh-lavender border border-[rgba(138,77,255,0.2)] dark:border-[rgba(138,77,255,0.3)]',
+  default: 'bg-[rgba(138,77,255,0.08)] text-gsh-accent dark:bg-[rgba(138,77,255,0.15)] dark:text-[#BFA4FF] border border-[rgba(138,77,255,0.2)] dark:border-[rgba(138,77,255,0.3)]',
   success: 'bg-emerald-100 text-emerald-700 dark:bg-emerald-900/40 dark:text-emerald-300',
   warning: 'bg-yellow-100 text-yellow-700 dark:bg-yellow-900/40 dark:text-yellow-300',
   danger:  'bg-red-100 text-red-700 dark:bg-red-900/40 dark:text-red-300',
