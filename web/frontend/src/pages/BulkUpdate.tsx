@@ -52,15 +52,15 @@ export default function BulkUpdate() {
   return (
     <div className="space-y-5 max-w-2xl">
       <div className="flex items-center gap-3">
-        <CalendarClock size={20} className="text-brand-500" />
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Bulk Due Date Update</h1>
+        <CalendarClock size={20} className="text-gsh-accent" />
+        <h1 className="text-xl font-bold text-gsh-text dark:text-[#e0e6f0]">Bulk Due Date Update</h1>
       </div>
 
       <Card>
         <CardHeader><CardTitle>Configure</CardTitle></CardHeader>
         <div className="grid grid-cols-2 gap-3 md:grid-cols-3">
           <div>
-            <label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Advance Days *</label>
+            <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Advance Days *</label>
             <Input
               type="number"
               min="1"
@@ -70,24 +70,24 @@ export default function BulkUpdate() {
             />
           </div>
           <div>
-            <label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Filter by Status</label>
+            <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Filter by Status</label>
             <select
               value={statusFilter}
               onChange={e => { setStatusFilter(e.target.value); reset() }}
-              className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500
-                         bg-white border-gray-300 text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+              className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gsh-accent
+                         bg-white border-gray-300 text-gray-700 dark:bg-[#1a1f2e] dark:border-[#2e3650] dark:text-[#e0e6f0]"
             >
               <option value="">All statuses</option>
               {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
             </select>
           </div>
           <div>
-            <label className="text-xs text-gray-500 dark:text-slate-400 mb-1 block">Filter by Package</label>
+            <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Filter by Package</label>
             <select
               value={packageFilter}
               onChange={e => { setPackageFilter(e.target.value); reset() }}
-              className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-brand-500
-                         bg-white border-gray-300 text-gray-700 dark:bg-slate-800 dark:border-slate-700 dark:text-slate-300"
+              className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gsh-accent
+                         bg-white border-gray-300 text-gray-700 dark:bg-[#1a1f2e] dark:border-[#2e3650] dark:text-[#e0e6f0]"
             >
               <option value="">All packages</option>
               {PACKAGES.map(p => <option key={p.id} value={p.name}>{p.name}</option>)}
@@ -125,9 +125,9 @@ export default function BulkUpdate() {
           </CardHeader>
 
           {previewMut.data.affected === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-slate-500">No accounts match the selected filters.</p>
+            <p className="text-sm text-gsh-muted dark:text-[#8899aa]">No accounts match the selected filters.</p>
           ) : (
-            <p className="text-sm text-gray-500 dark:text-slate-400">
+            <p className="text-sm text-gsh-muted dark:text-[#8899aa]">
               All matching active subscribers will have their due date advanced by <strong>{advanceDays} days</strong>.
               {statusFilter && <> Status filter: <strong>{statusFilter}</strong>.</>}
               {packageFilter && <> Package filter: <strong>{packageFilter}</strong>.</>}
@@ -135,7 +135,7 @@ export default function BulkUpdate() {
           )}
 
           {previewMut.data.accounts.length > 0 && (
-            <div className="mt-3 text-xs text-gray-500 dark:text-slate-500 space-y-1 max-h-48 overflow-y-auto">
+            <div className="mt-3 text-xs text-gsh-muted dark:text-[#8899aa] space-y-1 max-h-48 overflow-y-auto">
               {previewMut.data.accounts.map(id => (
                 <div key={id} className="font-mono">{id}</div>
               ))}

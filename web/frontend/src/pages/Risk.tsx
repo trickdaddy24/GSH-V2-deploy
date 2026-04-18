@@ -35,7 +35,7 @@ export default function Risk() {
   return (
     <div className="space-y-5">
       <div className="flex items-center justify-between">
-        <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Risk Analysis</h1>
+        <h1 className="text-xl font-bold text-gsh-text dark:text-[#e0e6f0]">Risk Analysis</h1>
         <div className="flex gap-2">
           <Button size="sm" variant={mode === 'general' ? 'primary' : 'secondary'} onClick={() => setMode('general')}>
             <Shield size={14} /> General (7-day)
@@ -51,7 +51,7 @@ export default function Risk() {
         </div>
       </div>
 
-      {isLoading && <p className="text-gray-400 dark:text-slate-400">Analyzing risk…</p>}
+      {isLoading && <p className="text-gsh-muted dark:text-[#8899aa]">Analyzing risk…</p>}
       {error && (
         <div className="text-red-500 space-y-2">
           <p>Failed to load risk report.</p>
@@ -71,8 +71,8 @@ export default function Risk() {
           {data.predictions.length === 0 ? (
             <Card className="text-center py-10">
               <Shield size={32} className="mx-auto text-emerald-500 mb-3" />
-              <p className="text-gray-700 dark:text-slate-300 font-medium">No at-risk subscribers detected.</p>
-              <p className="text-sm text-gray-400 dark:text-slate-500 mt-1">All accounts appear to be in good standing.</p>
+              <p className="text-gsh-text dark:text-[#e0e6f0] font-medium">No at-risk subscribers detected.</p>
+              <p className="text-sm text-gsh-muted dark:text-[#8899aa] mt-1">All accounts appear to be in good standing.</p>
             </Card>
           ) : (
             <div className="space-y-3">
@@ -87,9 +87,9 @@ export default function Risk() {
 
 function MetaStat({ label, value }: { label: string; value: string }) {
   return (
-    <div className="rounded-lg bg-white dark:bg-slate-900 border border-gray-200 dark:border-slate-800 px-4 py-3">
-      <p className="text-xs text-gray-500 dark:text-slate-500 uppercase tracking-wide">{label}</p>
-      <p className="text-gray-800 dark:text-slate-200 font-medium mt-0.5">{value}</p>
+    <div className="rounded-lg bg-white dark:bg-[#242938] border border-gray-200 dark:border-[#2e3650] px-4 py-3">
+      <p className="text-xs text-gsh-muted dark:text-[#8899aa] uppercase tracking-wide">{label}</p>
+      <p className="text-gsh-text dark:text-[#e0e6f0] font-medium mt-0.5">{value}</p>
     </div>
   )
 }
@@ -100,8 +100,8 @@ function RiskCard({ p }: { p: RiskPrediction }) {
     <Card>
       <CardHeader>
         <div className="flex items-center gap-2">
-          <span className="font-semibold text-gray-800 dark:text-slate-200">{p.username}</span>
-          <span className="text-xs text-gray-400 dark:text-slate-500">{p.id}</span>
+          <span className="font-semibold text-gsh-text dark:text-[#e0e6f0]">{p.username}</span>
+          <span className="text-xs text-gsh-muted dark:text-[#8899aa]">{p.id}</span>
           <Badge variant={RISK_BADGE[level] ?? 'default'}>{p.risk_level}</Badge>
         </div>
         <span className={`text-lg font-bold ${riskColor(p.risk_level)}`}>
@@ -112,10 +112,10 @@ function RiskCard({ p }: { p: RiskPrediction }) {
       <div className="grid grid-cols-1 gap-3 md:grid-cols-2 text-sm">
         {p.flags.length > 0 && (
           <div>
-            <p className="text-xs text-gray-500 dark:text-slate-500 uppercase mb-1">Risk Flags</p>
+            <p className="text-xs text-gsh-muted dark:text-[#8899aa] uppercase mb-1">Risk Flags</p>
             <ul className="space-y-0.5">
               {p.flags.map((f, i) => (
-                <li key={i} className="text-gray-700 dark:text-slate-300 flex gap-1.5">
+                <li key={i} className="text-gsh-text dark:text-[#e0e6f0] flex gap-1.5">
                   <span className="text-red-500">!</span> {f}
                 </li>
               ))}
@@ -124,11 +124,11 @@ function RiskCard({ p }: { p: RiskPrediction }) {
         )}
         {p.suggested_actions.length > 0 && (
           <div>
-            <p className="text-xs text-gray-500 dark:text-slate-500 uppercase mb-1">Suggested Actions</p>
+            <p className="text-xs text-gsh-muted dark:text-[#8899aa] uppercase mb-1">Suggested Actions</p>
             <ul className="space-y-0.5">
               {p.suggested_actions.map((a, i) => (
-                <li key={i} className="text-gray-700 dark:text-slate-300 flex gap-1.5">
-                  <span className="text-brand-500">→</span> {a}
+                <li key={i} className="text-gsh-text dark:text-[#e0e6f0] flex gap-1.5">
+                  <span className="text-gsh-accent">→</span> {a}
                 </li>
               ))}
             </ul>

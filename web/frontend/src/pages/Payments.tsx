@@ -19,14 +19,14 @@ export default function Payments() {
 
   return (
     <div className="space-y-5 max-w-2xl">
-      <h1 className="text-xl font-bold text-gray-900 dark:text-slate-100">Payment Lookup</h1>
+      <h1 className="text-xl font-bold text-gsh-text dark:text-[#e0e6f0]">Payment Lookup</h1>
 
       <form
         onSubmit={e => { e.preventDefault(); setQuery(accId.trim()) }}
         className="flex gap-2"
       >
         <div className="relative flex-1">
-          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gray-400 dark:text-slate-500" />
+          <Search size={14} className="absolute left-2.5 top-1/2 -translate-y-1/2 text-gsh-muted dark:text-[#8899aa]" />
           <Input
             className="pl-8"
             placeholder="Enter Account ID (e.g. ACC-0001)…"
@@ -37,33 +37,33 @@ export default function Payments() {
         <Button type="submit" disabled={!accId.trim()}>Lookup</Button>
       </form>
 
-      {isLoading && <p className="text-gray-400 dark:text-slate-400">Loading payments…</p>}
+      {isLoading && <p className="text-gsh-muted dark:text-[#8899aa]">Loading payments…</p>}
       {error && <p className="text-red-500">No payment history found or invalid account ID.</p>}
 
       {data && (
         <Card>
-          <p className="text-xs text-gray-400 dark:text-slate-500 mb-3 uppercase tracking-wide">
-            {data.length} payment{data.length !== 1 ? 's' : ''} for <span className="text-gray-700 dark:text-slate-300">{query}</span>
+          <p className="text-xs text-gsh-muted dark:text-[#8899aa] mb-3 uppercase tracking-wide">
+            {data.length} payment{data.length !== 1 ? 's' : ''} for <span className="text-gsh-text dark:text-[#e0e6f0]">{query}</span>
           </p>
           {data.length === 0 ? (
-            <p className="text-sm text-gray-400 dark:text-slate-500">No payments recorded for this account.</p>
+            <p className="text-sm text-gsh-muted dark:text-[#8899aa]">No payments recorded for this account.</p>
           ) : (
             <table className="w-full text-sm">
               <thead>
-                <tr className="text-xs text-gray-500 dark:text-slate-500 uppercase">
+                <tr className="text-xs text-gsh-muted dark:text-[#8899aa] uppercase">
                   <th className="text-left pb-2">Date</th>
                   <th className="text-left pb-2">Amount</th>
                   <th className="text-left pb-2">Status</th>
                   <th className="text-left pb-2">New Due Date</th>
                 </tr>
               </thead>
-              <tbody className="divide-y divide-gray-100 dark:divide-slate-800">
+              <tbody className="divide-y divide-gsh-border dark:divide-[#2e3650]">
                 {data.map(p => (
                   <tr key={p.id}>
-                    <td className="py-2 text-gray-700 dark:text-slate-300">{formatDate(p.date)}</td>
-                    <td className="py-2 text-gray-700 dark:text-slate-300">{formatCurrency(p.amount)}</td>
-                    <td className="py-2 text-gray-700 dark:text-slate-300 capitalize">{p.status}</td>
-                    <td className="py-2 text-gray-700 dark:text-slate-300">{formatDate(p.new_due_date)}</td>
+                    <td className="py-2 text-gsh-text dark:text-[#e0e6f0]">{formatDate(p.date)}</td>
+                    <td className="py-2 text-gsh-text dark:text-[#e0e6f0]">{formatCurrency(p.amount)}</td>
+                    <td className="py-2 text-gsh-text dark:text-[#e0e6f0] capitalize">{p.status}</td>
+                    <td className="py-2 text-gsh-text dark:text-[#e0e6f0]">{formatDate(p.new_due_date)}</td>
                   </tr>
                 ))}
               </tbody>
@@ -72,7 +72,7 @@ export default function Payments() {
         </Card>
       )}
 
-      <p className="text-xs text-gray-400 dark:text-slate-600">
+      <p className="text-xs text-gsh-muted dark:text-[#8899aa]">
         Tip: You can also view and record payments from the Subscriber detail page.
       </p>
     </div>
