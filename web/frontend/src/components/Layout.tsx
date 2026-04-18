@@ -40,7 +40,7 @@ export default function Layout() {
                 cn(
                   'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
                   isActive
-                    ? 'bg-[rgba(138,77,255,0.08)] dark:bg-[rgba(138,77,255,0.12)] text-gsh-accent dark:text-[#e0e6f0] border-l-2 border-gsh-accent dark:border-gsh-cyan pl-[10px]'
+                    ? 'bg-[rgba(138,77,255,0.08)] dark:bg-[rgba(138,77,255,0.12)] text-gsh-accent dark:text-[#e0e6f0] border-l-2 border-gsh-accent dark:border-[#00E0FF] pl-[10px]'
                     : 'text-gsh-muted dark:text-[#8899aa] hover:bg-gray-100 dark:hover:bg-[rgba(255,255,255,0.04)] hover:text-gsh-text dark:hover:text-[#e0e6f0]',
                 )
               }
@@ -52,7 +52,7 @@ export default function Layout() {
         </nav>
 
         <div className="border-t border-gsh-border dark:border-[#2e3650] px-4 py-3 flex items-center justify-between">
-          <span className="text-xs text-gsh-border dark:text-[#2e3650] font-mono">GSH Web v2.3.0</span>
+          <span className="text-xs text-gsh-muted dark:text-[#2e3650] font-mono">GSH Web v2.3.0</span>
           <div className="flex items-center gap-1">
             <button
               onClick={toggle}
