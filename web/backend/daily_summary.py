@@ -116,3 +116,51 @@ def _build_html(subscribers: list, today: str, bot_username: str) -> str:
   </div>
 </body>
 </html>"""
+
+
+def send_daily_summary() -> None:
+    """Query delinquent subscribers, build HTML, and send the summary email."""
+    from routers.telegram import _bot_username  # lazy import to avoid circular dep
+
+    result = get_all_subscribers(status_filter="delinquent", page_size=1000)
+    subscribers = result["subscribers"]
+    # Sort most overdue first (days_until_due most negative = longest overdue)
+    subscribers.sort(key=lambda s: s["days_until_due"] if s["days_until_due"] is not None else 0)
+
+    today = datetime.now(EASTERN).strftime("%B %d, %Y")
+    count = len(subscribers)
+    subject = f"GSH Daily Summary — {count} Delinquent Account{'s' if count != 1 else ''} — {today}"
+    html = _build_html(subscribers, today, _bot_username)
+
+    ok = notify_email_html(subject, html, ADMIN_EMAIL)
+    if ok:
+        logger.info("Daily summary sent: %d delinquent account(s)", count)
+    else:
+        logger.warning("Daily summary: email send failed (check EMAIL config in .env)")
+
+
+async def run_daily_summary() -> None:
+    """Asyncio background task: fire send_daily_summary() at 4:10 AM Eastern every day."""
+    logger.info("Daily summary scheduler started (target: %02d:%02d ET)", SEND_HOUR, SEND_MINUTE)
+    while True:
+        now = datetime.now(EASTERN)
+        target = now.replace(hour=SEND_HOUR, minute=SEND_MINUTE, second=0, microsecond=0)
+        if now >= target:
+            target += timedelta(days=1)
+        delay = (target - now).total_seconds()
+        logger.info(
+            "Daily summary: next send in %.1fh at %s ET",
+            delay / 3600,
+            target.strftime("%Y-%m-%d %H:%M"),
+        )
+        await asyncio.sleep(delay)
+
+        try:
+            await asyncio.to_thread(send_daily_summary)
+        except asyncio.CancelledError:
+            raise
+        except Exception:
+            logger.exception("Daily summary send failed — will retry tomorrow")
+
+        # Sleep ~24h to land near the same time tomorrow
+        await asyncio.sleep(23 * 3600 + 55 * 60)
