@@ -24,6 +24,24 @@ router = APIRouter()
 # A container restart clears all pending states. Suitable for single-worker container only.
 _pending: dict[int, dict] = {}
 
+_bot_username: str = ""
+
+
+def _fetch_bot_username() -> str:
+    token = CONFIG["NOTIFICATIONS"]["TELEGRAM"].get("bot_token", "")
+    if not token:
+        return ""
+    try:
+        r = requests.get(f"https://api.telegram.org/bot{token}/getMe", timeout=10)
+        if r.status_code == 200 and r.json().get("ok"):
+            return r.json()["result"]["username"]
+    except Exception:
+        pass
+    return ""
+
+
+_bot_username = _fetch_bot_username()
+
 
 # ── Helpers ───────────────────────────────────────────────────────────────────
 
@@ -58,6 +76,37 @@ def _answer_callback(callback_id: str) -> None:
         )
     except Exception as exc:
         logger.warning("_answer_callback error: %s", exc)
+
+
+def _send_notice_message(chat_id: int, acc_id: str, sub: dict) -> None:
+    """Send a due-notice message with inline 💳 Record Payment button to the given chat_id."""
+    token = CONFIG["NOTIFICATIONS"]["TELEGRAM"].get("bot_token")
+    if not token:
+        logger.warning("_send_notice_message: bot_token not configured")
+        return
+    days_val = sub.get("days_until_due")
+    days_text = f"{days_val} days" if days_val is not None else "unknown"
+    text = (
+        f"📅 Payment Due Soon\n"
+        f"Account: {acc_id}\n"
+        f"Name: {sub['username']}\n"
+        f"Amount: ${sub['price']:.2f}\n"
+        f"Due in: {days_text}"
+    )
+    keyboard = {
+        "inline_keyboard": [[{
+            "text": "💳 Record Payment",
+            "callback_data": f"pay:{acc_id}:{sub['price']:.2f}",
+        }]]
+    }
+    try:
+        requests.post(
+            _bot_url("sendMessage"),
+            json={"chat_id": chat_id, "text": text, "reply_markup": keyboard},
+            timeout=10,
+        )
+    except Exception as exc:
+        logger.warning("_send_notice_message error for %s: %s", acc_id, exc)
 
 
 # ── Routes ────────────────────────────────────────────────────────────────────
@@ -122,6 +171,15 @@ async def telegram_webhook(request: Request):
         chat_id = msg["chat"]["id"]
         text = msg.get("text", "").strip()
         logger.info("message: chat_id=%s text=%r pending_keys=%s", chat_id, text, list(_pending.keys()))
+
+        if text.startswith("/start pay_"):
+            acc_id = text[len("/start pay_"):]
+            sub = get_subscriber_by_id(acc_id)
+            if sub:
+                _send_notice_message(chat_id, acc_id, sub)
+            else:
+                _send_message(chat_id, f"Account {acc_id} not found.")
+            return {"ok": True}
 
         if chat_id in _pending:
             pending = _pending[chat_id]
