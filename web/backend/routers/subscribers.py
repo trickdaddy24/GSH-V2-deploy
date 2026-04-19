@@ -55,8 +55,8 @@ def _send_notice(acc_id: str, sub: dict, cfg: dict) -> bool:
 def _bulk_notice_task(acc_ids: list) -> None:
     """Background task: sends a due notice to each account ID."""
     cfg = CONFIG["NOTIFICATIONS"]["TELEGRAM"]
-    if not cfg.get("bot_token") or not cfg.get("chat_id"):
-        logger.warning("bulk_notice_task: Telegram not configured, skipping")
+    if not cfg.get("enabled") or not cfg.get("bot_token") or not cfg.get("chat_id"):
+        logger.warning("bulk_notice_task: Telegram not configured or disabled, skipping")
         return
     for acc_id in acc_ids:
         sub = get_subscriber_by_id(acc_id)
@@ -77,7 +77,7 @@ def bulk_send_due_notices(body: BulkNoticeBody, bg: BackgroundTasks):
     return BulkNoticeResult(
         sent=len(ids),
         failed=0,
-        message=f"Sending due notices to {len(ids)} account{'s' if len(ids) != 1 else ''}",
+        message=f"Queued due notices for {len(ids)} account{'s' if len(ids) != 1 else ''}",
     )
 
 
