@@ -216,3 +216,18 @@ export const getNotificationSettings = () =>
 
 export const updateNotificationSettings = (body: Partial<NotificationSettings>) =>
   api.patch<{ updated: string[]; message: string }>('/notifications/settings', body).then(r => r.data)
+
+export interface BulkNoticeResult {
+  sent: number
+  failed: number
+  message: string
+}
+
+export const sendDueNotice = (accId: string) =>
+  api.post<{ message: string }>(`/subscribers/${accId}/send-due-notice`).then(r => r.data)
+
+export const bulkSendDueNotices = (accountIds?: string[]) =>
+  api.post<BulkNoticeResult>(
+    '/subscribers/bulk/send-due-notices',
+    accountIds ? { account_ids: accountIds } : {},
+  ).then(r => r.data)
