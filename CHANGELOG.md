@@ -4,6 +4,17 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.5.0] — 2026-04-19
+
+### Added
+- **Button color variants** — new `green` (Edit), `slate` (Delete), `violet` (Record Payment), `teal` (Send Due Notice) variants added to Button component and applied in SubscriberDetail
+- **Status filter persistence** — Subscribers page status filter saved to `sessionStorage`; survives in-session navigation, resets on tab close
+- **Telegram payment flow** — "Send Due Notice" button on subscriber detail page sends a Telegram message with an inline "💳 Record Payment" button; tapping the button starts a two-step reply flow where the bot confirms the amount and records the payment automatically
+- **Bulk delinquent notices** — Dashboard shows delinquent subscriber count with a "Send Due Notices to All Delinquent" button; Subscribers page shows a "Send Due Notices" button in the filter toolbar when filtered to delinquent status
+- **Telegram webhook router** — new `/api/telegram/webhook` endpoint (no auth) handles Telegram callback queries and message replies; `/api/telegram/webhook/set` registers the webhook URL
+
+---
+
 ## [2.4.0] — 2026-04-18
 
 ### Fixed
