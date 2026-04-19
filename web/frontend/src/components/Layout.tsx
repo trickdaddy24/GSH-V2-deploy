@@ -52,7 +52,7 @@ export default function Layout() {
         </nav>
 
         <div className="border-t border-gsh-border dark:border-[#2e3650] px-4 py-3 flex items-center justify-between">
-          <span className="text-xs text-gsh-muted dark:text-[#2e3650] font-mono">GSH Web v2.5.0</span>
+          <span className="text-xs text-white font-mono">GSH Web v2.5.0</span>
           <div className="flex items-center gap-1">
             <button
               onClick={toggle}
