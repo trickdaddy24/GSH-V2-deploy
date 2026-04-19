@@ -37,7 +37,9 @@ export default function Subscribers() {
   const fileRef = useRef<HTMLInputElement>(null)
 
   const [search, setSearch]               = useState('')
-  const [statusFilter, setStatusFilter]   = useState('')
+  const [statusFilter, setStatusFilter] = useState<string>(
+    () => sessionStorage.getItem('gsh_status_filter') ?? ''
+  )
   const [includeInactive, setIncludeInactive] = useState(false)
   const [page, setPage]                   = useState(1)
   const [showAdd, setShowAdd]             = useState(false)
@@ -153,7 +155,12 @@ export default function Subscribers() {
                      bg-white border-gsh-border text-gsh-muted
                      dark:bg-[#1a1f2e] dark:border-[#2e3650] dark:text-[#8899aa]"
           value={statusFilter}
-          onChange={e => { setStatusFilter(e.target.value); setPage(1) }}
+          onChange={e => {
+            const v = e.target.value
+            sessionStorage.setItem('gsh_status_filter', v)
+            setStatusFilter(v)
+            setPage(1)
+          }}
         >
           <option value="">All statuses</option>
           {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
