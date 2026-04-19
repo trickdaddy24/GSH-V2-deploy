@@ -664,8 +664,10 @@ def bulk_update_due_dates(
         except ValueError:
             pass
 
+    account_list = [item["id"] for item in preview]
+
     if preview_only:
-        return {"updated": 0, "preview": preview, "confirmed": False}
+        return {"preview": True, "affected": len(account_list), "accounts": account_list}
 
     updated = 0
     try:
@@ -681,7 +683,7 @@ def bulk_update_due_dates(
     except sqlite3.Error:
         pass
 
-    return {"updated": updated, "preview": preview, "confirmed": True}
+    return {"preview": False, "affected": updated, "accounts": account_list}
 
 
 # ── Export / Import ────────────────────────────────────────────────────────────
