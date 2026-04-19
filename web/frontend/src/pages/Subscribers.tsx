@@ -18,7 +18,7 @@ const COLUMNS: { key: SortKey | null; label: string; render?: (s: Subscriber) =>
   { key: null,           label: 'Package' },
   { key: 'price',        label: 'Price',        render: s => formatCurrency(s.price) },
   { key: 'due_date',     label: 'Due Date',     render: s => formatDate(s.due_date) },
-  { key: 'status',       label: 'Status',       render: s => <StatusBadge status={s.status} isActive={s.is_active} /> },
+  { key: 'status',       label: 'Status',       render: s => <StatusBadge status={s.status} isActive={s.is_active as 0 | 1} /> },
   { key: null,           label: 'Last Payment', render: s => formatDate(s.last_payment) },
 ]
 
