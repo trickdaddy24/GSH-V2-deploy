@@ -1,8 +1,8 @@
 import { useRef, useState } from 'react'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
 import { useNavigate } from 'react-router-dom'
-import { Search, Plus, ChevronLeft, ChevronRight, Download, Upload, ChevronUp, ChevronDown } from 'lucide-react'
-import { getSubscribers, createSubscriber, exportSubscribers, importSubscribers, Subscriber } from '../lib/api'
+import { Search, Plus, ChevronLeft, ChevronRight, Download, Upload, ChevronUp, ChevronDown, Bell } from 'lucide-react'
+import { getSubscribers, createSubscriber, exportSubscribers, importSubscribers, Subscriber, bulkSendDueNotices } from '../lib/api'
 import { formatCurrency, formatDate } from '../lib/utils'
 import { PACKAGES, STATUSES } from '../lib/constants'
 import { useToast } from '../lib/ToastContext'
@@ -59,6 +59,12 @@ export default function Subscribers() {
   const addMut = useMutation({
     mutationFn: createSubscriber,
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['subscribers'] }); setShowAdd(false) },
+  })
+
+  const noticeMut = useMutation({
+    mutationFn: () => bulkSendDueNotices(),
+    onSuccess: r => addToast(r.message, 'success'),
+    onError: (e: Error) => addToast(e.message, 'error'),
   })
 
   const handleSort = (key: SortKey | null) => {
@@ -165,6 +171,17 @@ export default function Subscribers() {
           <option value="">All statuses</option>
           {STATUSES.map(s => <option key={s.value} value={s.value}>{s.label}</option>)}
         </select>
+        {statusFilter === 'delinquent' && (
+          <Button
+            size="sm"
+            variant="teal"
+            disabled={noticeMut.isPending}
+            onClick={() => noticeMut.mutate()}
+          >
+            <Bell size={14} />
+            {noticeMut.isPending ? 'Sending…' : 'Send Due Notices'}
+          </Button>
+        )}
         <label className="flex items-center gap-2 text-sm text-gsh-muted dark:text-[#8899aa] cursor-pointer">
           <input
             type="checkbox"
