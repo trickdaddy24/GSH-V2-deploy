@@ -162,5 +162,3 @@ async def run_daily_summary() -> None:
         except Exception:
             logger.exception("Daily summary send failed — will retry tomorrow")
 
-        # Sleep ~24h to land near the same time tomorrow
-        await asyncio.sleep(23 * 3600 + 55 * 60)
