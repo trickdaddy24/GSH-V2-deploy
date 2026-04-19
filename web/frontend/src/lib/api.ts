@@ -76,7 +76,7 @@ export interface Payment {
   subscription_id: string
   amount: number
   status: string
-  date: string
+  payment_date: string
   new_due_date: string | null
 }
 
@@ -146,6 +146,25 @@ export const recordPayment = (body: {
   advance_days?: number
   custom_due_date?: string
 }) => api.post('/payments', body).then(r => r.data)
+
+export interface BulkPaymentBody {
+  amount: number
+  status: string
+  advance_days?: number
+  status_filter?: string
+  package_filter?: string
+  account_ids?: string[]
+}
+
+export interface BulkPaymentResult {
+  affected: number
+  succeeded: string[]
+  failed: { id: string; error: string }[]
+  message: string
+}
+
+export const bulkRecordPayments = (body: BulkPaymentBody, preview = false) =>
+  api.post<BulkPaymentResult>('/payments/bulk', body, { params: { preview } }).then(r => r.data)
 
 export const getGeneralRisk = () =>
   api.get<RiskReport>('/risk/general').then(r => r.data)

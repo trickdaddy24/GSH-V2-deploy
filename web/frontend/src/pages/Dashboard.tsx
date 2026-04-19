@@ -1,13 +1,16 @@
+import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import {
   Users, UserCheck, UserX, CalendarClock, AlertTriangle,
   DollarSign, TrendingUp, Database, Send,
 } from 'lucide-react'
-import { getDashboard, triggerBackup, testTelegram, getNotificationStatus } from '../lib/api'
+import { getDashboard, triggerBackup, testTelegram, getNotificationStatus, bulkRecordPayments } from '../lib/api'
 import { formatCurrency } from '../lib/utils'
 import StatCard from '../components/StatCard'
 import { Card, CardHeader, CardTitle } from '../components/ui/Card'
 import Button from '../components/ui/Button'
+import Input from '../components/ui/Input'
+import { useToast } from '../lib/ToastContext'
 
 export default function Dashboard() {
   const { data, isLoading, error } = useQuery({ queryKey: ['dashboard'], queryFn: getDashboard })
@@ -101,6 +104,95 @@ export default function Dashboard() {
           </Button>
         </Card>
       </div>
+
+      <BulkPaymentCard />
     </div>
+  )
+}
+
+function BulkPaymentCard() {
+  const { addToast } = useToast()
+  const [amount, setAmount] = useState('')
+  const [status, setStatus] = useState('paid')
+  const [advanceDays, setAdvanceDays] = useState('30')
+  const [statusFilter, setStatusFilter] = useState('')
+  const [preview, setPreview] = useState<{ affected: number } | null>(null)
+
+  const previewMut = useMutation({
+    mutationFn: () => bulkRecordPayments({ amount: Number(amount), status, advance_days: Number(advanceDays), status_filter: statusFilter || undefined }, true),
+    onSuccess: r => setPreview({ affected: r.affected }),
+    onError: (e: Error) => addToast(e.message, 'error'),
+  })
+
+  const applyMut = useMutation({
+    mutationFn: () => bulkRecordPayments({ amount: Number(amount), status, advance_days: Number(advanceDays), status_filter: statusFilter || undefined }, false),
+    onSuccess: r => { addToast(r.message, 'success'); setPreview(null) },
+    onError: (e: Error) => addToast(e.message, 'error'),
+  })
+
+  return (
+    <Card>
+      <CardHeader><CardTitle>Bulk Payment</CardTitle></CardHeader>
+      <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
+        <div>
+          <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Amount ($) *</label>
+          <Input required type="number" step="0.01" min="0.01" value={amount} onChange={e => { setAmount(e.target.value); setPreview(null) }} />
+        </div>
+        <div>
+          <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Status</label>
+          <select
+            value={status}
+            onChange={e => { setStatus(e.target.value); setPreview(null) }}
+            className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gsh-accent bg-white border-gsh-border text-gsh-text dark:bg-[#1a1f2e] dark:border-[#2e3650] dark:text-[#e0e6f0]"
+          >
+            <option value="paid">Paid</option>
+            <option value="failed">Failed</option>
+            <option value="grace_period">Grace Period</option>
+          </select>
+        </div>
+        <div>
+          <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Advance Days</label>
+          <Input type="number" min="1" value={advanceDays} onChange={e => { setAdvanceDays(e.target.value); setPreview(null) }} />
+        </div>
+        <div>
+          <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Filter by Status</label>
+          <select
+            value={statusFilter}
+            onChange={e => { setStatusFilter(e.target.value); setPreview(null) }}
+            className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gsh-accent bg-white border-gsh-border text-gsh-text dark:bg-[#1a1f2e] dark:border-[#2e3650] dark:text-[#e0e6f0]"
+          >
+            <option value="">All active subscribers</option>
+            <option value="paid">Paid</option>
+            <option value="pending">Pending</option>
+            <option value="delinquent">Delinquent</option>
+            <option value="initial">Initial</option>
+          </select>
+        </div>
+      </div>
+      <div className="mt-3 flex items-center gap-2">
+        <Button
+          size="sm"
+          variant="secondary"
+          disabled={!amount || Number(amount) <= 0 || previewMut.isPending}
+          onClick={() => previewMut.mutate()}
+        >
+          {previewMut.isPending ? 'Checking…' : 'Preview'}
+        </Button>
+        {preview && (
+          <>
+            <span className="text-sm text-gsh-muted dark:text-[#8899aa]">
+              {preview.affected} account{preview.affected !== 1 ? 's' : ''} will be updated
+            </span>
+            <Button
+              size="sm"
+              disabled={preview.affected === 0 || applyMut.isPending}
+              onClick={() => applyMut.mutate()}
+            >
+              {applyMut.isPending ? 'Applying…' : `Apply to ${preview.affected}`}
+            </Button>
+          </>
+        )}
+      </div>
+    </Card>
   )
 }

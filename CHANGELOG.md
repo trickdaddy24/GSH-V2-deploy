@@ -4,6 +4,22 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.4.0] — 2026-04-18
+
+### Fixed
+- **Subscriber search** — search now matches account IDs in addition to usernames (e.g. searching "001" finds "dtv.001")
+
+### Added
+- **Bulk payment** — record the same payment for multiple subscribers at once from the Dashboard; supports status/package filters; preview mode shows affected count before applying; Telegram notification sent on completion
+- **Heartbeat** — backend sends a random Telegram "still alive" message every 20–28 hours via asyncio background task
+- **Payment notifications** — Telegram/Discord/Pushover notification sent when a payment is recorded (via BackgroundTasks)
+- **Edit notifications** — Telegram/Discord/Pushover notification sent when a subscriber is edited
+
+### Changed
+- Token cleanup: `border-gray-300`/`text-gray-700` remnants in SubscriberDetail replaced with `gsh.*` tokens
+
+---
+
 ## [2.3.0] — 2026-04-18
 
 ### Changed

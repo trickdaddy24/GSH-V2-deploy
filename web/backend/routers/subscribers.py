@@ -1,4 +1,4 @@
-from fastapi import APIRouter, Body, Depends, HTTPException, Query
+from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
 from typing import Any, List, Optional
 from auth import verify_api_key
 from database import (
@@ -11,6 +11,7 @@ from models import (
     SubscriberCreate, SubscriberUpdate, SubscriberList,
     MessageResponse, BulkDueDateUpdate, BulkUpdateResult,
 )
+from notify import notify_all
 
 router = APIRouter()
 
@@ -62,11 +63,13 @@ def add_subscriber(body: SubscriberCreate):
 
 
 @router.patch("/{acc_id}", response_model=MessageResponse, dependencies=[Depends(verify_api_key)])
-def edit_subscriber(acc_id: str, body: SubscriberUpdate):
+def edit_subscriber(acc_id: str, body: SubscriberUpdate, bg: BackgroundTasks):
     fields = body.model_dump(exclude_none=True)
     ok, error = update_subscriber(acc_id, fields)
     if not ok:
         raise HTTPException(status_code=400, detail=error)
+    changed = ", ".join(fields.keys())
+    bg.add_task(notify_all, f"✏️ Subscriber updated\nAccount: {acc_id}\nFields changed: {changed}")
     return {"message": f"Account {acc_id} updated"}
 
 

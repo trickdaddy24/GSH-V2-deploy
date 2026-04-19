@@ -123,7 +123,7 @@ export default function SubscriberDetail() {
             <tbody className="divide-y divide-gsh-border dark:divide-[#2e3650]">
               {payments.map(p => (
                 <tr key={p.id}>
-                  <td className="py-2 text-gsh-text dark:text-[#e0e6f0]">{formatDate(p.date)}</td>
+                  <td className="py-2 text-gsh-text dark:text-[#e0e6f0]">{formatDate(p.payment_date)}</td>
                   <td className="py-2 text-gsh-text dark:text-[#e0e6f0]">{formatCurrency(p.amount)}</td>
                   <td className="py-2 text-gsh-text dark:text-[#e0e6f0] capitalize">{p.status}</td>
                   <td className="py-2 text-gsh-text dark:text-[#e0e6f0]">{formatDate(p.new_due_date)}</td>
@@ -185,7 +185,7 @@ function EditForm({ sub, onSave, loading, onCancel }: EditFormProps) {
           value={form.package_id}
           onChange={set('package_id')}
           className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gsh-accent
-                     bg-white border-gray-300 text-gray-700 dark:bg-[#1a1f2e] dark:border-[#2e3650] dark:text-[#e0e6f0]"
+                     bg-white border-gsh-border text-gsh-text dark:bg-[#1a1f2e] dark:border-[#2e3650] dark:text-[#e0e6f0]"
         >
           {PACKAGES.map(p => (
             <option key={p.id} value={p.id}>{p.name}{p.price !== null ? ` — $${p.price}/mo` : ''}</option>
@@ -227,14 +227,14 @@ function PaymentForm({ accId, onSubmit, loading }: PaymentFormProps) {
           custom_due_date: form.custom_due_date || undefined,
         })
       }}
-      className="grid grid-cols-2 gap-3 mb-4 md:grid-cols-4 border-b border-gray-100 dark:border-[#2e3650] pb-4"
+      className="grid grid-cols-2 gap-3 mb-4 md:grid-cols-4 border-b border-gsh-border dark:border-[#2e3650] pb-4"
     >
       <div><label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Amount ($) *</label><Input required type="number" step="0.01" value={form.amount} onChange={set('amount')} /></div>
       <div>
         <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Status</label>
         <select
           className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gsh-accent
-                     bg-white border-gray-300 text-gray-700
+                     bg-white border-gsh-border text-gsh-text
                      dark:bg-[#1a1f2e] dark:border-[#2e3650] dark:text-[#e0e6f0]"
           value={form.status} onChange={set('status')}
         >

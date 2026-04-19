@@ -1,4 +1,4 @@
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 from typing import Optional, List, Dict, Any
 
 
@@ -122,3 +122,20 @@ class MessageResponse(BaseModel):
 class BackupResponse(BaseModel):
     filename: str
     size_kb: float
+
+
+# ── Bulk Payments ──────────────────────────────────────────
+
+class BulkPaymentBody(BaseModel):
+    amount: float = Field(..., gt=0)
+    status: str = "paid"                     # paid | partial | late
+    advance_days: int = 30
+    status_filter: Optional[str] = None      # filter by subscription status
+    package_filter: Optional[str] = None
+    account_ids: Optional[List[str]] = None  # if set, ignore filters
+
+class BulkPaymentResult(BaseModel):
+    affected: int
+    succeeded: List[str]
+    failed: List[dict]                       # [{id, error}]
+    message: str

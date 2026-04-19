@@ -250,8 +250,8 @@ def get_all_subscribers(
         params = []
 
         if search:
-            where.append("LOWER(s.username) LIKE ?")
-            params.append(f"%{search.lower()}%")
+            where.append("(LOWER(s.username) LIKE ? OR LOWER(s.id) LIKE ?)")
+            params.extend([f"%{search.lower()}%", f"%{search.lower()}%"])
         if package_filter:
             where.append("s.package = ?")
             params.append(package_filter)
@@ -565,6 +565,61 @@ def add_payment(
         return False, str(e)
 
 
+def bulk_add_payments(
+    amount: float,
+    status: str,
+    advance_days: int = 30,
+    status_filter: Optional[str] = None,
+    package_filter: Optional[str] = None,
+    account_ids: Optional[List[str]] = None,
+    preview_only: bool = False,
+) -> dict:
+    """Record the same payment for multiple subscribers. Returns affected/succeeded/failed."""
+    # Early return for explicitly empty account list
+    if account_ids is not None and len(account_ids) == 0:
+        return {"affected": 0, "succeeded": [], "failed": [], "message": "No accounts specified"}
+
+    db = get_db()
+    try:
+        c = db.cursor()
+        if account_ids:
+            placeholders = ",".join("?" * len(account_ids))
+            c.execute(
+                f"SELECT id FROM subscriptions WHERE id IN ({placeholders}) AND is_active = 1",
+                account_ids,
+            )
+        else:
+            q = "SELECT id FROM subscriptions WHERE is_active = 1"
+            params = []
+            if status_filter:
+                q += " AND status = ?"
+                params.append(status_filter)
+            if package_filter:
+                q += " AND package = ?"
+                params.append(package_filter)
+            c.execute(q, params)
+        ids = [row[0] for row in c.fetchall()]
+    finally:
+        db.close()
+
+    if preview_only:
+        return {"affected": len(ids), "succeeded": [], "failed": [], "message": f"{len(ids)} accounts would be updated"}
+
+    succeeded, failed = [], []
+    for acc_id in ids:
+        ok, error = add_payment(acc_id=acc_id, amount=amount, status=status, advance_days=advance_days)
+        if ok:
+            succeeded.append(acc_id)
+        else:
+            failed.append({"id": acc_id, "error": error})
+    return {
+        "affected": len(succeeded),
+        "succeeded": succeeded,
+        "failed": failed,
+        "message": f"Recorded payment for {len(succeeded)}/{len(ids)} accounts",
+    }
+
+
 def get_payment_history(acc_id: str) -> List[Dict]:
     try:
         with get_db() as conn:
@@ -594,7 +649,7 @@ def bulk_update_due_dates(
         page=1,
         page_size=10000,
     )
-    targets = result["items"]
+    targets = result["subscribers"]
 
     if account_ids:
         targets = [s for s in targets if s["id"] in account_ids]

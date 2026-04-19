@@ -3,6 +3,9 @@ import os
 import sqlite3
 import traceback
 
+from contextlib import asynccontextmanager
+import asyncio
+
 from fastapi import FastAPI, Request
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -11,6 +14,7 @@ from config import CONFIG
 from database import migrate_db
 from routers import dashboard, subscribers, payments, risk, notifications
 import auth_router
+from heartbeat import run_heartbeat
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -37,10 +41,23 @@ print("=" * 60)
 
 migrate_db()
 
+@asynccontextmanager
+async def lifespan(app_: FastAPI):
+    task = asyncio.create_task(run_heartbeat())
+    try:
+        yield
+    finally:
+        task.cancel()
+        try:
+            await task
+        except asyncio.CancelledError:
+            pass
+
 app = FastAPI(
     title="GuardianStreams Billing API",
     version="1.0.0",
     description="REST API for the GuardianStreams subscription management system.",
+    lifespan=lifespan,
 )
 
 
