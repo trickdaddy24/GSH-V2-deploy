@@ -2,9 +2,9 @@ import { useState } from 'react'
 import { useQuery, useMutation } from '@tanstack/react-query'
 import {
   Users, UserCheck, UserX, CalendarClock, AlertTriangle,
-  DollarSign, TrendingUp, Database, Send,
+  DollarSign, TrendingUp, Database, Send, Bell,
 } from 'lucide-react'
-import { getDashboard, triggerBackup, testTelegram, getNotificationStatus, bulkRecordPayments } from '../lib/api'
+import { getDashboard, triggerBackup, testTelegram, getNotificationStatus, bulkRecordPayments, bulkSendDueNotices, getSubscribers } from '../lib/api'
 import { formatCurrency } from '../lib/utils'
 import StatCard from '../components/StatCard'
 import { Card, CardHeader, CardTitle } from '../components/ui/Card'
@@ -106,7 +106,52 @@ export default function Dashboard() {
       </div>
 
       <BulkPaymentCard />
+      <DelinquentNoticesCard />
     </div>
+  )
+}
+
+function DelinquentNoticesCard() {
+  const { addToast } = useToast()
+
+  const { data: subsData } = useQuery({
+    queryKey: ['delinquent-count'],
+    queryFn: () => getSubscribers({ status: 'delinquent', page_size: 1 }),
+  })
+  const delinquentCount = subsData?.total ?? 0
+
+  const noticeMut = useMutation({
+    mutationFn: () => bulkSendDueNotices(),
+    onSuccess: r => addToast(r.message, 'success'),
+    onError: (e: Error) => addToast(e.message, 'error'),
+  })
+
+  return (
+    <Card>
+      <CardHeader>
+        <CardTitle>Delinquent Notices</CardTitle>
+        {delinquentCount > 0 && (
+          <span className="text-xs font-semibold px-2 py-0.5 rounded-full bg-red-100 text-red-700 dark:bg-red-900/30 dark:text-red-300">
+            {delinquentCount} delinquent
+          </span>
+        )}
+      </CardHeader>
+      <p className="text-sm text-gsh-muted dark:text-[#8899aa] mb-4">
+        Send a Telegram due-notice with a payment button to all delinquent subscribers.
+      </p>
+      <Button
+        variant="teal"
+        size="sm"
+        className="w-full justify-center"
+        disabled={delinquentCount === 0 || noticeMut.isPending}
+        onClick={() => noticeMut.mutate()}
+      >
+        <Bell size={14} />
+        {noticeMut.isPending
+          ? 'Sending…'
+          : `Send Due Notices${delinquentCount > 0 ? ` (${delinquentCount})` : ''}`}
+      </Button>
+    </Card>
   )
 }
 
