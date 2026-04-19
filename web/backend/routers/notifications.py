@@ -1,7 +1,7 @@
 import os
 import requests
 from fastapi import APIRouter, Depends, HTTPException
-from dotenv import set_key
+import re
 from auth import verify_api_key
 from config import CONFIG
 from database import backup_database
@@ -10,6 +10,27 @@ from models import MessageResponse, BackupResponse
 router = APIRouter()
 
 _ENV_FILE = os.path.abspath(os.path.join(os.path.dirname(__file__), "..", ".env"))
+
+
+def _set_env_key(env_file: str, key: str, value: str) -> None:
+    """Write a KEY=value line directly into the .env file (in-place).
+    Avoids atomic rename so it works on bind-mounted files."""
+    try:
+        with open(env_file, "r") as f:
+            lines = f.readlines()
+    except FileNotFoundError:
+        lines = []
+    pattern = re.compile(rf"^{re.escape(key)}\s*=")
+    new_line = f"{key}={value}\n"
+    for i, line in enumerate(lines):
+        if pattern.match(line):
+            lines[i] = new_line
+            break
+    else:
+        lines.append(new_line)
+    with open(env_file, "w") as f:
+        f.writelines(lines)
+
 
 # Maps "service.field" -> ENV_VAR_NAME
 _ENV_MAP = {
@@ -79,7 +100,7 @@ def update_settings(body: dict):
         # Skip blank password — means "don't change"
         if field == "password" and not value:
             continue
-        set_key(_ENV_FILE, env_var, value)
+        _set_env_key(_ENV_FILE, env_var, value)
         # Update in-memory config so changes take effect immediately
         svc = service.upper()
         if field == "enabled":
