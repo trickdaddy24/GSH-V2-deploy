@@ -12,7 +12,7 @@ from fastapi.responses import JSONResponse
 
 from config import CONFIG
 from database import migrate_db
-from routers import dashboard, subscribers, payments, risk, notifications
+from routers import dashboard, subscribers, payments, risk, notifications, telegram
 import auth_router
 from heartbeat import run_heartbeat
 
@@ -90,6 +90,7 @@ app.include_router(subscribers.router,    prefix="/api/subscribers",    tags=["S
 app.include_router(payments.router,       prefix="/api/payments",       tags=["Payments"])
 app.include_router(risk.router,           prefix="/api/risk",           tags=["Risk"])
 app.include_router(notifications.router,  prefix="/api/notifications",  tags=["Notifications"])
+app.include_router(telegram.router,       prefix="/api/telegram",       tags=["Telegram"])
 
 
 @app.get("/api/health")
