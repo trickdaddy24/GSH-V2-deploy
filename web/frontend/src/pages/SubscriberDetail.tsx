@@ -1,12 +1,14 @@
 import { useState } from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useQuery, useMutation, useQueryClient } from '@tanstack/react-query'
-import { ArrowLeft, Pencil, UserX, UserCheck, Trash2, Plus } from 'lucide-react'
+import { ArrowLeft, Pencil, UserX, UserCheck, Trash2, Plus, Send } from 'lucide-react'
 import {
   getSubscriber, getPayments, updateSubscriber,
   deactivateSubscriber, reactivateSubscriber, deleteSubscriber, recordPayment,
+  sendDueNotice,
 } from '../lib/api'
 import { formatCurrency, formatDate } from '../lib/utils'
+import { useToast } from '../lib/ToastContext'
 import { PACKAGES } from '../lib/constants'
 import StatusBadge from '../components/StatusBadge'
 import { Card, CardHeader, CardTitle } from '../components/ui/Card'
@@ -19,6 +21,7 @@ export default function SubscriberDetail() {
   const qc = useQueryClient()
   const [editing, setEditing] = useState(false)
   const [showPayment, setShowPayment] = useState(false)
+  const { addToast } = useToast()
 
   const { data: sub, isLoading } = useQuery({
     queryKey: ['subscriber', accId],
@@ -46,6 +49,11 @@ export default function SubscriberDetail() {
     onSuccess: () => { qc.invalidateQueries({ queryKey: ['payments', accId] }); qInv(); setShowPayment(false) },
     onError: (e: Error) => alert(e.message),
   })
+  const noticeMut = useMutation({
+    mutationFn: () => sendDueNotice(accId!),
+    onSuccess: () => addToast('Due notice sent via Telegram', 'success'),
+    onError: (e: Error) => addToast(e.message, 'error'),
+  })
 
   if (isLoading) return <p className="text-gsh-muted dark:text-[#8899aa]">Loading…</p>
   if (!sub) return <p className="text-red-500">Subscriber not found.</p>
@@ -64,8 +72,8 @@ export default function SubscriberDetail() {
       <Card>
         <CardHeader>
           <CardTitle>Account Info</CardTitle>
-          <div className="flex gap-2">
-            <Button size="sm" variant="secondary" onClick={() => setEditing(v => !v)}>
+          <div className="flex gap-2 flex-wrap">
+            <Button size="sm" variant="green" onClick={() => setEditing(v => !v)}>
               <Pencil size={12} /> Edit
             </Button>
             {sub.is_active ? (
@@ -77,8 +85,11 @@ export default function SubscriberDetail() {
                 <UserCheck size={12} /> Reactivate
               </Button>
             )}
-            <Button size="sm" variant="danger" onClick={() => { if (confirm(`Permanently delete ${sub.username}?`)) deleteMut.mutate() }} disabled={deleteMut.isPending}>
+            <Button size="sm" variant="slate" onClick={() => { if (confirm(`Permanently delete ${sub.username}?`)) deleteMut.mutate() }} disabled={deleteMut.isPending}>
               <Trash2 size={12} /> Delete
+            </Button>
+            <Button size="sm" variant="teal" onClick={() => noticeMut.mutate()} disabled={noticeMut.isPending}>
+              <Send size={12} /> {noticeMut.isPending ? 'Sending…' : 'Send Due Notice'}
             </Button>
           </div>
         </CardHeader>
@@ -101,7 +112,7 @@ export default function SubscriberDetail() {
       <Card>
         <CardHeader>
           <CardTitle>Payment History</CardTitle>
-          <Button size="sm" variant="secondary" onClick={() => setShowPayment(v => !v)}>
+          <Button size="sm" variant="violet" onClick={() => setShowPayment(v => !v)}>
             <Plus size={12} /> Record Payment
           </Button>
         </CardHeader>
