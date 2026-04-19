@@ -58,7 +58,7 @@ export default function SubscriberDetail() {
         </button>
         <h1 className="text-xl font-bold text-gsh-text dark:text-[#e0e6f0]">{sub.username}</h1>
         <span className="text-gsh-muted dark:text-[#8899aa] text-sm">{sub.id}</span>
-        <StatusBadge status={sub.status} isActive={sub.is_active} />
+        <StatusBadge status={sub.status} isActive={sub.is_active as 0 | 1} />
       </div>
 
       <Card>
