@@ -538,7 +538,9 @@ def add_payment(
                     new_due_str = new_due.strftime(DATE_FORMAT)
                 elif advance_days and advance_days > 0:
                     current = datetime.strptime(current_due_str, DATE_FORMAT)
-                    new_due_str = (current + timedelta(days=advance_days)).strftime(DATE_FORMAT)
+                    today = datetime.now().replace(hour=0, minute=0, second=0, microsecond=0)
+                    base = max(current, today)
+                    new_due_str = (base + timedelta(days=advance_days)).strftime(DATE_FORMAT)
                 else:
                     return False, "Paid status requires advance_days or custom_due_date"
 

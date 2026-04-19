@@ -86,6 +86,7 @@ async def telegram_webhook(request: Request):
         callback_id = cq.get("id", "")
         data = cq.get("data", "")
         chat_id: int = cq["message"]["chat"]["id"]
+        logger.info("callback_query: chat_id=%s data=%r", chat_id, data)
 
         if data.startswith("pay:"):
             parts = data.split(":")
@@ -94,6 +95,7 @@ async def telegram_webhook(request: Request):
                 try:
                     price = float(price_str)
                 except ValueError:
+                    logger.warning("callback_query: bad price_str=%r", price_str)
                     _answer_callback(callback_id)
                     return {"ok": True}
 
@@ -101,6 +103,7 @@ async def telegram_webhook(request: Request):
                 username = sub["username"] if sub else acc_id
 
                 _pending[chat_id] = {"acc_id": acc_id, "price": price, "username": username}
+                logger.info("pending set: chat_id=%s acc_id=%s price=%.2f", chat_id, acc_id, price)
                 _answer_callback(callback_id)
                 _send_message(
                     chat_id,
@@ -108,6 +111,8 @@ async def telegram_webhook(request: Request):
                     f"Current price: ${price:.2f}\n\n"
                     f"Reply with the amount, or send 'ok' to confirm ${price:.2f}.",
                 )
+            else:
+                logger.warning("callback_query: unexpected parts count=%d data=%r", len(parts), data)
 
         return {"ok": True}
 
@@ -116,6 +121,7 @@ async def telegram_webhook(request: Request):
         msg = body["message"]
         chat_id = msg["chat"]["id"]
         text = msg.get("text", "").strip()
+        logger.info("message: chat_id=%s text=%r pending_keys=%s", chat_id, text, list(_pending.keys()))
 
         if chat_id in _pending:
             pending = _pending[chat_id]
@@ -132,18 +138,23 @@ async def telegram_webhook(request: Request):
                     _send_message(chat_id, "Please send a number (e.g. 30) or 'ok' to confirm.")
                     return {"ok": True}
 
+            logger.info("recording payment: acc_id=%s amount=%.2f", acc_id, amount)
             ok, error = add_payment(acc_id=acc_id, amount=amount, status="paid", advance_days=30)
             if ok:
                 sub = get_subscriber_by_id(acc_id)
                 new_due = sub["due_date"] if sub else "unknown"
                 del _pending[chat_id]
+                logger.info("payment ok: acc_id=%s new_due=%s", acc_id, new_due)
                 _send_message(
                     chat_id,
                     f"✅ Payment of ${amount:.2f} recorded for {acc_id}.\nNew due date: {new_due}",
                 )
             else:
                 del _pending[chat_id]
+                logger.error("payment failed: acc_id=%s error=%s", acc_id, error)
                 _send_message(chat_id, f"❌ Failed to record payment: {error}")
+        else:
+            logger.info("message: chat_id=%s not in pending, ignoring", chat_id)
 
     return {"ok": True}
 
