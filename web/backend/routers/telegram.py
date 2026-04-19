@@ -37,7 +37,7 @@ def _send_message(chat_id: int, text: str) -> None:
     try:
         requests.post(
             _bot_url("sendMessage"),
-            json={"chat_id": chat_id, "text": text, "parse_mode": "Markdown"},
+            json={"chat_id": chat_id, "text": text},
             timeout=10,
         )
     except Exception as exc:
@@ -95,9 +95,9 @@ async def telegram_webhook(request: Request):
                 _answer_callback(callback_id)
                 _send_message(
                     chat_id,
-                    f"💳 Recording payment for *{username}* (`{acc_id}`)\n"
-                    f"Current price: *${price:.2f}*\n\n"
-                    f"Reply with the amount, or send `ok` to confirm ${price:.2f}.",
+                    f"💳 Recording payment for {username} ({acc_id})\n"
+                    f"Current price: ${price:.2f}\n\n"
+                    f"Reply with the amount, or send 'ok' to confirm ${price:.2f}.",
                 )
 
         return {"ok": True}
@@ -120,7 +120,7 @@ async def telegram_webhook(request: Request):
                 try:
                     amount = float(text)
                 except ValueError:
-                    _send_message(chat_id, "Please send a number (e.g. `30`) or `ok` to confirm.")
+                    _send_message(chat_id, "Please send a number (e.g. 30) or 'ok' to confirm.")
                     return {"ok": True}
 
             ok, error = add_payment(acc_id=acc_id, amount=amount, status="paid", advance_days=30)
@@ -130,9 +130,10 @@ async def telegram_webhook(request: Request):
                 del _pending[chat_id]
                 _send_message(
                     chat_id,
-                    f"✅ Payment of *${amount:.2f}* recorded for *{acc_id}*.\nNew due date: *{new_due}*",
+                    f"✅ Payment of ${amount:.2f} recorded for {acc_id}.\nNew due date: {new_due}",
                 )
             else:
+                del _pending[chat_id]
                 _send_message(chat_id, f"❌ Failed to record payment: {error}")
 
     return {"ok": True}
