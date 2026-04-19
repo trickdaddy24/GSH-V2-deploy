@@ -4,6 +4,9 @@ Reads from the shared CONFIG object on each call; values are set at startup from
 """
 import logging
 import requests
+import smtplib
+from email.mime.multipart import MIMEMultipart
+from email.mime.text import MIMEText
 from config import CONFIG
 
 logger = logging.getLogger("gsh.notify")
@@ -74,3 +77,38 @@ def notify_all(message: str, title: str = "GuardianStreams") -> dict:
         "discord":   notify_discord(message),
         "pushover":  notify_pushover(message, title=title),
     }
+
+
+def notify_email_html(subject: str, html_body: str, to: str) -> bool:
+    cfg = CONFIG["NOTIFICATIONS"]["EMAIL"]
+    if not cfg.get("enabled"):
+        return False
+    username = cfg.get("username")
+    password = cfg.get("password")
+    if not username or not password:
+        logger.warning("notify_email_html: email credentials not configured")
+        return False
+    from_email = cfg.get("from_email", "billing@guardianstreams.com")
+    from_name = cfg.get("from_name", "GuardianStreams")
+    smtp_server = cfg.get("smtp_server", "smtp.gmail.com")
+    smtp_port = int(cfg.get("smtp_port", 587))
+    try:
+        msg = MIMEMultipart("alternative")
+        msg["Subject"] = subject
+        msg["From"] = f"{from_name} <{from_email}>"
+        msg["To"] = to
+        msg.attach(MIMEText(
+            "Open this email in an HTML-capable client to view the GSH daily summary.",
+            "plain",
+        ))
+        msg.attach(MIMEText(html_body, "html"))
+        with smtplib.SMTP(smtp_server, smtp_port) as server:
+            server.ehlo()
+            server.starttls()
+            server.login(username, password)
+            server.sendmail(from_email, to, msg.as_string())
+        logger.info("notify_email_html: sent '%s' to %s", subject, to)
+        return True
+    except Exception as exc:
+        logger.warning("notify_email_html error: %s", exc)
+        return False
