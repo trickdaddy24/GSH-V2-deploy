@@ -4,6 +4,19 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.6.0] — 2026-04-19
+
+### Added
+- **Daily delinquent summary email** — sent to `admin@stunna.xyz` daily at 4:10 AM Eastern via asyncio background task; each delinquent subscriber gets an HTML card with account info, days overdue, amount due, a website link, and a Telegram deep link
+- **`notify_email_html()`** — new function in `notify.py` for sending HTML emails via Gmail SMTP with plain-text fallback
+- **Telegram deep-link payment flow** — `/start pay_*` handler in the webhook; tapping `https://t.me/{bot}?start=pay_{acc_id}` sends the due-notice with inline 💳 Record Payment button directly to the user
+- **Bot username cache** — fetched once at module load via `getMe` and used to build deep-link URLs in the daily email
+
+### Fixed
+- **Due date calculation** — recording a payment for an overdue subscriber now advances from today (not the old past due date)
+
+---
+
 ## [2.5.0] — 2026-04-19
 
 ### Added
