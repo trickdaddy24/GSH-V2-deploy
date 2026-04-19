@@ -15,6 +15,7 @@ from database import migrate_db
 from routers import dashboard, subscribers, payments, risk, notifications, telegram
 import auth_router
 from heartbeat import run_heartbeat
+from daily_summary import run_daily_summary
 
 # ── Logging ───────────────────────────────────────────────────────────────────
 logging.basicConfig(
@@ -44,12 +45,18 @@ migrate_db()
 @asynccontextmanager
 async def lifespan(app_: FastAPI):
     task = asyncio.create_task(run_heartbeat())
+    summary_task = asyncio.create_task(run_daily_summary())
     try:
         yield
     finally:
         task.cancel()
         try:
             await task
+        except asyncio.CancelledError:
+            pass
+        summary_task.cancel()
+        try:
+            await summary_task
         except asyncio.CancelledError:
             pass
 
