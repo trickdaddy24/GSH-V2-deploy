@@ -179,7 +179,7 @@ export default function Subscribers() {
             onClick={() => noticeMut.mutate()}
           >
             <Bell size={14} />
-            {noticeMut.isPending ? 'Sending…' : 'Send Due Notices'}
+            {noticeMut.isPending ? 'Sending…' : 'Send Due Notices (All Delinquent)'}
           </Button>
         )}
         <label className="flex items-center gap-2 text-sm text-gsh-muted dark:text-[#8899aa] cursor-pointer">

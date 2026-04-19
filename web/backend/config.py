@@ -41,6 +41,7 @@ CONFIG = {
             "enabled": os.getenv("TELEGRAM_ENABLED", "false").lower() == "true",
             "bot_token": os.getenv("TELEGRAM_BOT_TOKEN"),
             "chat_id": os.getenv("TELEGRAM_CHAT_ID"),
+            "webhook_secret": os.getenv("TELEGRAM_WEBHOOK_SECRET", ""),
         },
         "DISCORD": {
             "enabled": os.getenv("DISCORD_ENABLED", "false").lower() == "true",

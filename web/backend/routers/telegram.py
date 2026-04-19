@@ -20,6 +20,8 @@ logger = logging.getLogger("gsh.telegram")
 router = APIRouter()
 
 # In-memory state: {chat_id: {"acc_id": str, "price": float, "username": str}}
+# NOTE: in-memory only — not safe for multi-worker or multi-replica deploys.
+# A container restart clears all pending states. Suitable for single-worker container only.
 _pending: dict[int, dict] = {}
 
 
@@ -65,7 +67,14 @@ async def telegram_webhook(request: Request):
     """
     Receives Telegram updates. No API key auth — Telegram calls this directly.
     Always returns HTTP 200 so Telegram does not retry.
+    Validated via X-Telegram-Bot-Api-Secret-Token header when TELEGRAM_WEBHOOK_SECRET is set.
     """
+    expected_secret = CONFIG["NOTIFICATIONS"]["TELEGRAM"].get("webhook_secret", "")
+    if expected_secret:
+        incoming_secret = request.headers.get("X-Telegram-Bot-Api-Secret-Token", "")
+        if incoming_secret != expected_secret:
+            return {"ok": True}
+
     try:
         body = await request.json()
     except Exception:
@@ -149,10 +158,14 @@ def set_webhook():
     if not token:
         raise HTTPException(status_code=400, detail="TELEGRAM_BOT_TOKEN not configured")
     webhook_url = "https://gsh.stunna.xyz/api/telegram/webhook"
+    secret = CONFIG["NOTIFICATIONS"]["TELEGRAM"].get("webhook_secret", "")
+    payload: dict = {"url": webhook_url}
+    if secret:
+        payload["secret_token"] = secret
     try:
         r = requests.post(
             f"https://api.telegram.org/bot{token}/setWebhook",
-            json={"url": webhook_url},
+            json=payload,
             timeout=10,
         )
         return r.json()
