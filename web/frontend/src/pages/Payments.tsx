@@ -60,7 +60,7 @@ export default function Payments() {
               <tbody className="divide-y divide-gsh-border dark:divide-[#2e3650]">
                 {data.map(p => (
                   <tr key={p.id}>
-                    <td className="py-2 text-gsh-text dark:text-[#e0e6f0]">{formatDate(p.date)}</td>
+                    <td className="py-2 text-gsh-text dark:text-[#e0e6f0]">{formatDate(p.payment_date)}</td>
                     <td className="py-2 text-gsh-text dark:text-[#e0e6f0]">{formatCurrency(p.amount)}</td>
                     <td className="py-2 text-gsh-text dark:text-[#e0e6f0] capitalize">{p.status}</td>
                     <td className="py-2 text-gsh-text dark:text-[#e0e6f0]">{formatDate(p.new_due_date)}</td>
