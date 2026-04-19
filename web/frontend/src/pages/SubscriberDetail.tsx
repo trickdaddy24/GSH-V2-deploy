@@ -107,7 +107,7 @@ export default function SubscriberDetail() {
         </CardHeader>
 
         {showPayment && (
-          <PaymentForm accId={accId!} onSubmit={b => payMut.mutate(b)} loading={payMut.isPending} />
+          <PaymentForm accId={accId!} defaultAmount={sub.price} onSubmit={b => payMut.mutate(b)} loading={payMut.isPending} />
         )}
 
         {payments && payments.length > 0 ? (
@@ -206,12 +206,13 @@ function EditForm({ sub, onSave, loading, onCancel }: EditFormProps) {
 
 interface PaymentFormProps {
   accId: string
+  defaultAmount?: number
   onSubmit: (b: Parameters<typeof recordPayment>[0]) => void
   loading: boolean
 }
 
-function PaymentForm({ accId, onSubmit, loading }: PaymentFormProps) {
-  const [form, setForm] = useState({ amount: '', status: 'paid', advance_days: '30', custom_due_date: '' })
+function PaymentForm({ accId, defaultAmount, onSubmit, loading }: PaymentFormProps) {
+  const [form, setForm] = useState({ amount: defaultAmount != null ? String(defaultAmount) : '', status: 'paid', advance_days: '30', custom_due_date: '' })
   const set = (k: string) => (e: React.ChangeEvent<HTMLInputElement | HTMLSelectElement>) =>
     setForm(f => ({ ...f, [k]: e.target.value }))
 
