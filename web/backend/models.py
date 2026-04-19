@@ -139,3 +139,15 @@ class BulkPaymentResult(BaseModel):
     succeeded: List[str]
     failed: List[dict]                       # [{id, error}]
     message: str
+
+
+# ── Due Notices ────────────────────────────────────────────
+
+class BulkNoticeBody(BaseModel):
+    account_ids: Optional[List[str]] = None  # if None, targets all delinquent active subscribers
+
+
+class BulkNoticeResult(BaseModel):
+    sent: int
+    failed: int
+    message: str

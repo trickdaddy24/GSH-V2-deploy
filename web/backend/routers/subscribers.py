@@ -1,6 +1,9 @@
+import logging
+import requests
 from fastapi import APIRouter, BackgroundTasks, Body, Depends, HTTPException, Query
 from typing import Any, List, Optional
 from auth import verify_api_key
+from config import CONFIG
 from database import (
     get_all_subscribers, get_subscriber_by_id, create_subscriber,
     update_subscriber, deactivate_subscriber, reactivate_subscriber,
@@ -10,10 +13,91 @@ from database import (
 from models import (
     SubscriberCreate, SubscriberUpdate, SubscriberList,
     MessageResponse, BulkDueDateUpdate, BulkUpdateResult,
+    BulkNoticeBody, BulkNoticeResult,
 )
 from notify import notify_all
 
+logger = logging.getLogger("gsh.subscribers")
 router = APIRouter()
+
+
+def _send_notice(acc_id: str, sub: dict, cfg: dict) -> bool:
+    """Send a Telegram due-notice message with inline 💳 Record Payment button.
+    Returns True on success, False on any error.
+    """
+    days_val = sub.get("days_until_due")
+    days_text = f"{days_val} days" if days_val is not None else "unknown"
+    text = (
+        f"📅 Payment Due Soon\n"
+        f"Account: {acc_id}\n"
+        f"Name: {sub['username']}\n"
+        f"Amount: ${sub['price']:.2f}\n"
+        f"Due in: {days_text}"
+    )
+    keyboard = {
+        "inline_keyboard": [[{
+            "text": "💳 Record Payment",
+            "callback_data": f"pay:{acc_id}:{sub['price']:.2f}",
+        }]]
+    }
+    try:
+        r = requests.post(
+            f"https://api.telegram.org/bot{cfg['bot_token']}/sendMessage",
+            json={"chat_id": cfg["chat_id"], "text": text, "reply_markup": keyboard},
+            timeout=10,
+        )
+        return r.status_code == 200 and r.json().get("ok", False)
+    except Exception as exc:
+        logger.warning("_send_notice error for %s: %s", acc_id, exc)
+        return False
+
+
+def _bulk_notice_task(acc_ids: list) -> None:
+    """Background task: sends a due notice to each account ID."""
+    cfg = CONFIG["NOTIFICATIONS"]["TELEGRAM"]
+    if not cfg.get("bot_token") or not cfg.get("chat_id"):
+        logger.warning("bulk_notice_task: Telegram not configured, skipping")
+        return
+    for acc_id in acc_ids:
+        sub = get_subscriber_by_id(acc_id)
+        if sub:
+            _send_notice(acc_id, sub, cfg)
+
+
+@router.post("/bulk/send-due-notices", response_model=BulkNoticeResult, dependencies=[Depends(verify_api_key)])
+def bulk_send_due_notices(body: BulkNoticeBody, bg: BackgroundTasks):
+    """Send a Telegram due-notice to all delinquent subscribers (or a specific list)."""
+    if body.account_ids is not None:
+        ids = body.account_ids
+    else:
+        result = get_all_subscribers(status_filter="delinquent", page_size=1000)
+        ids = [s["id"] for s in result["subscribers"]]
+
+    bg.add_task(_bulk_notice_task, ids)
+    return BulkNoticeResult(
+        sent=len(ids),
+        failed=0,
+        message=f"Sending due notices to {len(ids)} account{'s' if len(ids) != 1 else ''}",
+    )
+
+
+@router.post("/{acc_id}/send-due-notice", response_model=MessageResponse, dependencies=[Depends(verify_api_key)])
+def send_due_notice(acc_id: str):
+    """Send a Telegram due-notice with inline payment button for a single subscriber."""
+    sub = get_subscriber_by_id(acc_id)
+    if not sub:
+        raise HTTPException(status_code=404, detail=f"Account {acc_id} not found")
+
+    cfg = CONFIG["NOTIFICATIONS"]["TELEGRAM"]
+    if not cfg.get("enabled"):
+        raise HTTPException(status_code=400, detail="Telegram notifications are disabled")
+    if not cfg.get("bot_token") or not cfg.get("chat_id"):
+        raise HTTPException(status_code=400, detail="Telegram bot_token or chat_id not configured")
+
+    ok = _send_notice(acc_id, sub, cfg)
+    if not ok:
+        raise HTTPException(status_code=502, detail="Failed to send Telegram message")
+    return {"message": f"Due notice sent for {acc_id}"}
 
 
 @router.get("", response_model=SubscriberList, dependencies=[Depends(verify_api_key)])
