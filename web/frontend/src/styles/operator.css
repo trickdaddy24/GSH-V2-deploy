@@ -1,0 +1,85 @@
+/* Operator design system — ported from Downloads/GSH/directions/operator.jsx.
+   Dense data-console look. Default theme = Aurora (≈ current GSH purple/dark).
+   Applied by adding className="op" to a wrapping element. */
+
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600&family=IBM+Plex+Mono:wght@400;500;600&display=swap');
+
+.op {
+  /* Aurora theme */
+  --op-bg: #0e0a1e;
+  --op-ink: #ece4ff;
+  --op-dim: #8a7cb8;
+  --op-line: #251a48;
+  --op-card: #16102b;
+  --op-sub: #1c1438;
+  --op-accent: #a371ff;
+  --op-accent2: #ff5fa8;
+  --op-chip-active: #1b1242;
+  --op-chip-alert: #2b1430;
+  --op-chip-warn: #2b2410;
+  --op-chip-warn-fg: #e8c674;
+  --op-input-bg: #0a0617;
+
+  background: var(--op-bg);
+  color: var(--op-ink);
+  font: 13px/1.45 'IBM Plex Sans', ui-sans-serif, sans-serif;
+  position: relative;
+}
+.op * { box-sizing: border-box; }
+
+.op-mono { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-feature-settings: 'zero', 'ss05'; }
+.op-num { font-family: 'IBM Plex Mono', ui-monospace, monospace; font-feature-settings: 'zero'; font-variant-numeric: tabular-nums; }
+.op-eyebrow { font-family: 'IBM Plex Mono', monospace; font-size: 10px; letter-spacing: .12em; text-transform: uppercase; color: var(--op-dim); font-weight: 500; }
+.op-accent { color: var(--op-accent); }
+.op-accent2 { color: var(--op-accent2); }
+.op-dim { color: var(--op-dim); }
+.op-panel { background: var(--op-card); border: 1px solid var(--op-line); }
+.op-sub { background: var(--op-sub); }
+
+.op-btn {
+  display: inline-flex; align-items: center; gap: 6px;
+  padding: 6px 12px; background: transparent;
+  border: 1px solid var(--op-line); color: var(--op-ink);
+  font: 500 12px 'IBM Plex Mono', monospace;
+  text-transform: uppercase; letter-spacing: .04em; cursor: pointer;
+  transition: all .1s;
+}
+.op-btn:hover { border-color: var(--op-ink); background: var(--op-sub); }
+.op-btn:disabled { opacity: .5; cursor: not-allowed; }
+.op-btn-primary { background: var(--op-accent); border-color: var(--op-accent); color: #fff; }
+.op-btn-primary:hover { background: var(--op-accent); opacity: .9; border-color: var(--op-accent); }
+.op-btn-danger { color: var(--op-accent2); border-color: var(--op-accent2); }
+.op-btn-danger:hover { background: var(--op-accent2); color: #fff; border-color: var(--op-accent2); }
+
+.op-input {
+  width: 100%; padding: 9px 12px; border: 1px solid var(--op-line);
+  background: var(--op-input-bg); color: var(--op-ink);
+  font: 13px 'IBM Plex Sans', sans-serif; outline: none;
+  transition: border-color .12s;
+}
+.op-input:focus { border-color: var(--op-accent); }
+.op-input::placeholder { color: var(--op-dim); }
+
+.op-tag {
+  display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px;
+  font: 500 10px 'IBM Plex Mono', monospace; letter-spacing: .04em;
+  text-transform: uppercase; border: 1px solid currentColor;
+}
+.op-tag.solid { border: 0; padding: 3px 7px; }
+
+.op-row:hover { background: var(--op-sub); }
+.op-row.is-on { background: var(--op-sub); }
+
+.op-tab {
+  padding: 8px 14px; border: 0; border-right: 1px solid var(--op-line);
+  background: transparent; color: var(--op-dim);
+  font: 500 11px 'IBM Plex Mono', monospace;
+  text-transform: uppercase; letter-spacing: .06em; cursor: pointer;
+  text-decoration: none; display: inline-flex; align-items: center; gap: 6px;
+}
+.op-tab.is-on { background: var(--op-card); color: var(--op-ink); border-bottom: 2px solid var(--op-accent); margin-bottom: -1px; }
+.op-tab:hover { color: var(--op-ink); }
+
+.op-divider { height: 1px; background: var(--op-line); border: 0; }
+.op-blink { animation: opBlink 1.4s ease-in-out infinite; }
+@keyframes opBlink { 50% { opacity: .3; } }

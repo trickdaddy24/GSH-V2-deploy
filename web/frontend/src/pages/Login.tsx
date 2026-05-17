@@ -1,7 +1,8 @@
 import { useState, FormEvent } from 'react'
 import { useNavigate } from 'react-router-dom'
-import { Shield } from 'lucide-react'
 import { login } from '../lib/auth'
+
+const APP_VERSION = 'v2.7.0'
 
 export default function Login() {
   const navigate = useNavigate()
@@ -25,65 +26,132 @@ export default function Login() {
   }
 
   return (
-    <div className="flex min-h-screen items-center justify-center bg-gsh-bg dark:bg-[#1a1f2e] px-4">
-      <div className="w-full max-w-sm">
-        <div className="flex flex-col items-center mb-8 gap-3">
-          <div className="flex items-center justify-center w-12 h-12 rounded-xl bg-gsh-accent text-white">
-            <Shield size={24} />
-          </div>
-          <div className="text-center">
-            <h1 className="text-xl font-bold text-gsh-text dark:text-[#e0e6f0]">GuardianStreams</h1>
-            <p className="text-sm text-gsh-muted dark:text-[#8899aa]">Sign in to your account</p>
-          </div>
+    <div
+      className="op"
+      style={{ width: '100%', minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center' }}
+    >
+      {/* Top status bar */}
+      <div
+        style={{
+          position: 'fixed', top: 0, left: 0, right: 0, padding: '10px 24px',
+          borderBottom: '1px solid var(--op-line)', display: 'flex',
+          justifyContent: 'space-between', alignItems: 'center',
+          fontFamily: 'IBM Plex Mono, monospace', fontSize: 11, zIndex: 2,
+        }}
+      >
+        <div style={{ display: 'flex', gap: 18, alignItems: 'center' }}>
+          <span style={{ fontWeight: 600, letterSpacing: '.06em' }}>
+            GSH ▍ GUARDIANSTREAMS BILLING SYSTEM
+          </span>
+          <span className="op-dim">{APP_VERSION}</span>
+          <span className="op-dim">·</span>
+          <span className="op-mono op-accent">AURORA</span>
         </div>
+        <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+          <span className="op-blink" style={{ width: 6, height: 6, background: 'var(--op-accent)' }} />
+          <span className="op-accent">SYSTEMS NOMINAL</span>
+        </span>
+      </div>
 
-        <form onSubmit={handleSubmit} className="bg-white dark:bg-[#242938] rounded-xl border border-gsh-border dark:border-[#2e3650] p-6 space-y-4 shadow-sm">
+      <div style={{ display: 'grid', gridTemplateColumns: '420px 280px', gap: 1, background: 'var(--op-line)' }}>
+        {/* Form panel */}
+        <form className="op-panel" style={{ padding: '36px 36px 28px' }} onSubmit={handleSubmit}>
+          <div className="op-eyebrow" style={{ marginBottom: 8 }}>SESSION ▸ AUTHENTICATE</div>
+          <div style={{ fontSize: 28, fontWeight: 600, letterSpacing: '-.01em', lineHeight: 1.1 }}>
+            Operator Console
+          </div>
+          <div className="op-dim op-mono" style={{ fontSize: 11, marginTop: 6 }}>
+            GuardianStreams billing &amp; subscriber management.
+          </div>
+
+          <hr className="op-divider" style={{ margin: '24px 0 20px' }} />
+
           {error && (
-            <div className="rounded-lg bg-red-50 dark:bg-red-900/20 border border-red-200 dark:border-red-800 px-3 py-2 text-sm text-red-700 dark:text-red-400">
-              {error}
+            <div
+              className="op-mono"
+              style={{
+                marginBottom: 14, padding: '9px 12px', fontSize: 11,
+                color: 'var(--op-accent2)', border: '1px solid var(--op-accent2)',
+                background: 'var(--op-chip-alert)',
+              }}
+            >
+              ▸ {error}
             </div>
           )}
 
-          <div className="space-y-1">
-            <label htmlFor="username" className="block text-sm font-medium text-gsh-text dark:text-[#e0e6f0]">
-              Username
-            </label>
-            <input
-              id="username"
-              type="text"
-              autoComplete="username"
-              required
-              value={username}
-              onChange={e => setUsername(e.target.value)}
-              className="w-full rounded-lg border border-gsh-border dark:border-[#2e3650] bg-white dark:bg-[#1a1f2e] px-3 py-2 text-sm text-gsh-text dark:text-[#e0e6f0] placeholder-gsh-muted dark:placeholder-[#8899aa] focus:outline-none focus:ring-2 focus:ring-gsh-accent focus:border-transparent"
-              placeholder="admin"
-            />
-          </div>
-
-          <div className="space-y-1">
-            <label htmlFor="password" className="block text-sm font-medium text-gsh-text dark:text-[#e0e6f0]">
-              Password
-            </label>
-            <input
-              id="password"
-              type="password"
-              autoComplete="current-password"
-              required
-              value={password}
-              onChange={e => setPassword(e.target.value)}
-              className="w-full rounded-lg border border-gsh-border dark:border-[#2e3650] bg-white dark:bg-[#1a1f2e] px-3 py-2 text-sm text-gsh-text dark:text-[#e0e6f0] placeholder-gsh-muted dark:placeholder-[#8899aa] focus:outline-none focus:ring-2 focus:ring-gsh-accent focus:border-transparent"
-              placeholder="••••••••"
-            />
+          <div style={{ display: 'grid', gap: 14 }}>
+            <div>
+              <div className="op-eyebrow" style={{ marginBottom: 6 }}>OPERATOR USERNAME</div>
+              <input
+                className="op-input" autoComplete="username" required
+                placeholder="admin" value={username}
+                onChange={(e) => setUsername(e.target.value)}
+              />
+            </div>
+            <div>
+              <div className="op-eyebrow" style={{ marginBottom: 6 }}>PASSWORD</div>
+              <input
+                className="op-input" type="password" autoComplete="current-password" required
+                placeholder="••••••••••" value={password}
+                onChange={(e) => setPassword(e.target.value)}
+              />
+            </div>
           </div>
 
           <button
-            type="submit"
-            disabled={loading}
-            className="w-full rounded-lg bg-gsh-accent hover:bg-gsh-accent-hover disabled:opacity-60 disabled:cursor-not-allowed px-4 py-2 text-sm font-semibold text-white transition-colors focus:outline-none focus:ring-2 focus:ring-gsh-accent focus:ring-offset-2"
+            type="submit" disabled={loading}
+            className="op-btn op-btn-primary"
+            style={{ width: '100%', justifyContent: 'center', padding: '10px 14px', marginTop: 24 }}
           >
-            {loading ? 'Signing in…' : 'Sign in'}
+            {loading ? '▸ AUTHENTICATING…' : '▸ AUTHENTICATE'}
           </button>
+
+          <div className="op-dim op-mono" style={{ fontSize: 10, marginTop: 18, display: 'flex', justifyContent: 'space-between' }}>
+            <span>LAN OPERATOR SESSION</span>
+            <span className="op-accent">● TLS 1.3</span>
+          </div>
         </form>
+
+        {/* Side panel — static system info (pre-auth: no live data) */}
+        <div className="op-panel" style={{ padding: '28px 22px', display: 'flex', flexDirection: 'column' }}>
+          <div className="op-eyebrow" style={{ marginBottom: 14 }}>SYSTEM</div>
+          {[
+            ['SERVICE', 'BILLING API'],
+            ['TRANSPORT', 'HTTPS / TLS 1.3'],
+            ['AUTH', 'JWT SESSION'],
+            ['BUILD', APP_VERSION],
+          ].map(([k, v], i) => (
+            <div
+              key={i}
+              style={{
+                padding: '12px 0', borderBottom: i < 3 ? '1px solid var(--op-line)' : 'none',
+                display: 'flex', justifyContent: 'space-between', alignItems: 'baseline',
+              }}
+            >
+              <div className="op-eyebrow" style={{ fontSize: 9 }}>{k}</div>
+              <div className="op-mono" style={{ fontSize: 12 }}>{v}</div>
+            </div>
+          ))}
+          <div style={{ marginTop: 'auto', paddingTop: 18 }}>
+            <span className="op-dim op-mono" style={{ fontSize: 10 }}>
+              Authenticate to load live console metrics.
+            </span>
+          </div>
+        </div>
+      </div>
+
+      {/* Footer */}
+      <div
+        style={{
+          position: 'fixed', bottom: 0, left: 0, right: 0, padding: '8px 24px',
+          borderTop: '1px solid var(--op-line)', display: 'flex',
+          justifyContent: 'space-between', fontFamily: 'IBM Plex Mono, monospace',
+          fontSize: 10, color: 'var(--op-dim)', letterSpacing: '.04em',
+        }}
+      >
+        <span>GSH WEB {APP_VERSION} · NODE-1</span>
+        <span>GUARDIANSTREAMS</span>
+        <span>F1 HELP · F12 CLI</span>
       </div>
     </div>
   )

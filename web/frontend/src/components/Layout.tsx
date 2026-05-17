@@ -1,11 +1,13 @@
 import { NavLink, Outlet, useNavigate } from 'react-router-dom'
-import { LayoutDashboard, Users, CreditCard, ShieldAlert, Shield, Sun, Moon, CalendarClock, Settings, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, CreditCard, ShieldAlert, Sun, Moon, CalendarClock, Settings, LogOut } from 'lucide-react'
 import { cn } from '../lib/utils'
 import { useTheme } from '../lib/ThemeContext'
 import { clearToken } from '../lib/auth'
 
+const APP_VERSION = 'v2.7.0'
+
 const NAV = [
-  { to: '/dashboard',   label: 'Dashboard',   icon: LayoutDashboard },
+  { to: '/dashboard',   label: 'Console',      icon: LayoutDashboard },
   { to: '/subscribers', label: 'Subscribers',  icon: Users },
   { to: '/payments',    label: 'Payments',     icon: CreditCard },
   { to: '/risk',        label: 'Risk',         icon: ShieldAlert },
@@ -23,59 +25,68 @@ export default function Layout() {
   }
 
   return (
-    <div className="flex h-screen overflow-hidden bg-gsh-bg dark:bg-[#1a1f2e]">
-      {/* Sidebar */}
-      <aside className="flex w-56 flex-col border-r border-gsh-border dark:border-[#2e3650] bg-white dark:bg-[#242938]">
-        <div className="flex items-center gap-2 px-4 py-5">
-          <Shield size={22} className="text-gsh-accent" />
-          <span className="font-bold text-gsh-text dark:text-[#e0e6f0] tracking-tight">GuardianStreams</span>
+    <div className="op" style={{ display: 'flex', flexDirection: 'column', height: '100vh', overflow: 'hidden' }}>
+      {/* TOP BAR */}
+      <header
+        style={{
+          display: 'flex', alignItems: 'center', justifyContent: 'space-between',
+          padding: '10px 16px', borderBottom: '1px solid var(--op-line)',
+          background: 'var(--op-card)', position: 'relative', zIndex: 2,
+        }}
+      >
+        <div style={{ display: 'flex', alignItems: 'center', gap: 14, fontFamily: 'IBM Plex Mono, monospace', fontSize: 11 }}>
+          <span style={{ fontWeight: 600, letterSpacing: '.06em' }}>GSH ▍ BILLING</span>
+          <span className="op-dim">·</span>
+          <span className="op-accent op-mono">▍AURORA</span>
         </div>
-
-        <nav className="flex-1 space-y-0.5 px-2 py-2">
-          {NAV.map(({ to, label, icon: Icon }) => (
-            <NavLink
-              key={to}
-              to={to}
-              className={({ isActive }) =>
-                cn(
-                  'flex items-center gap-2.5 rounded-lg px-3 py-2 text-sm transition-colors',
-                  isActive
-                    ? 'bg-[rgba(138,77,255,0.08)] dark:bg-[rgba(138,77,255,0.12)] text-gsh-accent dark:text-[#e0e6f0] border-l-2 border-gsh-accent dark:border-[#00E0FF] pl-[10px]'
-                    : 'text-gsh-muted dark:text-[#8899aa] hover:bg-gray-100 dark:hover:bg-[rgba(255,255,255,0.04)] hover:text-gsh-text dark:hover:text-[#e0e6f0]',
-                )
-              }
-            >
-              <Icon size={16} />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="border-t border-gsh-border dark:border-[#2e3650] px-4 py-3 flex items-center justify-between">
-          <span className="text-xs text-white font-mono">GSH Web v2.6.0</span>
-          <div className="flex items-center gap-1">
-            <button
-              onClick={toggle}
-              className="rounded-md p-1.5 text-gsh-muted hover:text-gsh-text hover:bg-gray-100 dark:text-[#8899aa] dark:hover:text-[#e0e6f0] dark:hover:bg-[rgba(255,255,255,0.06)] transition-colors"
-              title={theme === 'dark' ? 'Switch to light mode' : 'Switch to dark mode'}
-            >
-              {theme === 'dark' ? <Sun size={15} /> : <Moon size={15} />}
-            </button>
-            <button
-              onClick={handleLogout}
-              className="rounded-md p-1.5 text-gsh-muted hover:text-red-600 hover:bg-red-50 dark:text-[#8899aa] dark:hover:text-red-400 dark:hover:bg-red-900/20 transition-colors"
-              title="Sign out"
-            >
-              <LogOut size={15} />
-            </button>
-          </div>
+        <div style={{ display: 'flex', gap: 12, alignItems: 'center', fontFamily: 'IBM Plex Mono, monospace', fontSize: 11 }}>
+          <span style={{ display: 'inline-flex', alignItems: 'center', gap: 6 }}>
+            <span className="op-blink" style={{ width: 6, height: 6, background: 'var(--op-accent)' }} />
+            <span className="op-accent">LIVE</span>
+          </span>
+          <span className="op-dim">·</span>
+          <span className="op-dim">{APP_VERSION}</span>
+          <button className="op-btn" onClick={toggle} title="Toggle theme" style={{ padding: '5px 8px' }}>
+            {theme === 'dark' ? <Sun size={13} /> : <Moon size={13} />}
+          </button>
+          <button className="op-btn op-btn-danger" onClick={handleLogout} title="Sign out" style={{ padding: '5px 8px' }}>
+            <LogOut size={13} /> EXIT
+          </button>
         </div>
-      </aside>
+      </header>
 
-      {/* Main */}
-      <main className="flex-1 overflow-auto p-6">
+      {/* TAB NAV */}
+      <nav style={{ display: 'flex', borderBottom: '1px solid var(--op-line)', background: 'var(--op-sub)' }}>
+        {NAV.map(({ to, label, icon: Icon }) => (
+          <NavLink
+            key={to}
+            to={to}
+            className={({ isActive }) => cn('op-tab', isActive && 'is-on')}
+          >
+            <Icon size={13} />
+            {label}
+          </NavLink>
+        ))}
+      </nav>
+
+      {/* MAIN */}
+      <main style={{ flex: 1, overflow: 'auto', padding: 16, position: 'relative', zIndex: 1 }}>
         <Outlet />
       </main>
+
+      {/* STATUS BAR */}
+      <footer
+        style={{
+          display: 'flex', justifyContent: 'space-between', padding: '6px 16px',
+          borderTop: '1px solid var(--op-line)', background: 'var(--op-sub)',
+          fontFamily: 'IBM Plex Mono, monospace', fontSize: 10,
+          color: 'var(--op-dim)', letterSpacing: '.04em',
+        }}
+      >
+        <span>READY · DB OK</span>
+        <span>GSH WEB {APP_VERSION} · NODE-1</span>
+        <span>F1 HELP · F12 CLI</span>
+      </footer>
     </div>
   )
 }

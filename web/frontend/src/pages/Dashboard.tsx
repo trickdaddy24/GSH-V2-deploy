@@ -28,8 +28,8 @@ export default function Dashboard() {
     onError: (e: Error) => alert(`Failed: ${e.message}`),
   })
 
-  if (isLoading) return <p className="text-gsh-muted dark:text-[#8899aa]">Loading dashboard…</p>
-  if (error || !data) return <p className="text-red-500">Failed to load dashboard.</p>
+  if (isLoading) return <p className="op-mono op-dim" style={{ padding: 16 }}>▸ LOADING CONSOLE…</p>
+  if (error || !data) return <p className="op-mono" style={{ padding: 16, color: 'var(--op-accent2)' }}>▸ FAILED TO LOAD DASHBOARD</p>
 
   const revenueChange = data.revenue_last_month > 0
     ? (((data.revenue_this_month - data.revenue_last_month) / data.revenue_last_month) * 100).toFixed(1)
@@ -37,7 +37,12 @@ export default function Dashboard() {
 
   return (
     <div className="space-y-6">
-      <h1 className="text-xl font-bold text-gsh-text dark:text-[#e0e6f0]">Dashboard</h1>
+      <div>
+        <div className="op-eyebrow">CONSOLE ▸ OVERVIEW</div>
+        <h1 style={{ fontSize: 22, fontWeight: 600, letterSpacing: '-.01em', marginTop: 2 }}>
+          Billing Console
+        </h1>
+      </div>
 
       <div className="grid grid-cols-2 gap-4 lg:grid-cols-4">
         <StatCard label="Total Subscribers" value={data.total_subscribers} icon={Users} />
@@ -180,15 +185,15 @@ function BulkPaymentCard() {
       <CardHeader><CardTitle>Bulk Payment</CardTitle></CardHeader>
       <div className="grid grid-cols-2 gap-3 md:grid-cols-4">
         <div>
-          <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Amount ($) *</label>
+          <label className="op-eyebrow mb-1 block">Amount ($) *</label>
           <Input required type="number" step="0.01" min="0.01" value={amount} onChange={e => { setAmount(e.target.value); setPreview(null) }} />
         </div>
         <div>
-          <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Status</label>
+          <label className="op-eyebrow mb-1 block">Status</label>
           <select
             value={status}
             onChange={e => { setStatus(e.target.value); setPreview(null) }}
-            className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gsh-accent bg-white border-gsh-border text-gsh-text dark:bg-[#1a1f2e] dark:border-[#2e3650] dark:text-[#e0e6f0]"
+            className="op-input"
           >
             <option value="paid">Paid</option>
             <option value="failed">Failed</option>
@@ -196,15 +201,15 @@ function BulkPaymentCard() {
           </select>
         </div>
         <div>
-          <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Advance Days</label>
+          <label className="op-eyebrow mb-1 block">Advance Days</label>
           <Input type="number" min="1" value={advanceDays} onChange={e => { setAdvanceDays(e.target.value); setPreview(null) }} />
         </div>
         <div>
-          <label className="text-xs text-gsh-muted dark:text-[#8899aa] mb-1 block">Filter by Status</label>
+          <label className="op-eyebrow mb-1 block">Filter by Status</label>
           <select
             value={statusFilter}
             onChange={e => { setStatusFilter(e.target.value); setPreview(null) }}
-            className="w-full rounded-md border px-3 py-1.5 text-sm focus:outline-none focus:ring-2 focus:ring-gsh-accent bg-white border-gsh-border text-gsh-text dark:bg-[#1a1f2e] dark:border-[#2e3650] dark:text-[#e0e6f0]"
+            className="op-input"
           >
             <option value="">All active subscribers</option>
             <option value="paid">Paid</option>

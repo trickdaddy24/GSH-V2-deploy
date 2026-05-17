@@ -69,9 +69,20 @@ export default function StatusBadge({ status, isActive = 1 }: Props) {
 
   const Icon = cfg.icon
 
+  // Operator look: map semantic status → theme accent vars on an op-tag.
+  const key = !isActive ? 'inactive' : status.toLowerCase()
+  const tone =
+    key === 'inactive'
+      ? { color: 'var(--op-dim)', background: 'transparent' }
+      : ['active', 'paid'].includes(key)
+        ? { color: 'var(--op-accent)', background: 'var(--op-chip-active)' }
+        : ['overdue', 'pastdue', 'delinquent'].includes(key)
+          ? { color: 'var(--op-accent2)', background: 'var(--op-chip-alert)' }
+          : { color: 'var(--op-chip-warn-fg)', background: 'var(--op-chip-warn)' }
+
   return (
-    <span className={`inline-flex items-center gap-1 rounded-full px-2.5 py-0.5 text-xs font-medium ${cfg.classes} ${cfg.darkClasses}`}>
-      <Icon size={13} aria-hidden="true" />
+    <span className="op-tag solid" style={tone}>
+      <Icon size={11} aria-hidden="true" />
       {cfg.label}
     </span>
   )

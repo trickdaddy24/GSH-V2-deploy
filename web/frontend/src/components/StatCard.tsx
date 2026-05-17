@@ -10,17 +10,17 @@ interface Props {
   sub?: string
 }
 
-export default function StatCard({ label, value, icon: Icon, iconColor = 'text-gsh-accent', sub }: Props) {
+export default function StatCard({ label, value, icon: Icon, iconColor, sub }: Props) {
   return (
-    <Card className="flex items-start gap-4">
-      <div className={cn('mt-0.5 rounded-lg bg-[#F3F0FF] dark:bg-[rgba(138,77,255,0.12)] p-2', iconColor)}>
-        <Icon size={20} />
+    <Card className="!p-3">
+      <div className="flex items-start justify-between">
+        <p className="op-eyebrow" style={{ fontSize: 9 }}>{label}</p>
+        <Icon size={14} className={cn('op-dim', iconColor)} />
       </div>
-      <div>
-        <p className="text-xs text-gsh-muted dark:text-[#8899aa] uppercase tracking-wide">{label}</p>
-        <p className="text-2xl font-bold text-gsh-accent">{value}</p>
-        {sub && <p className="text-xs text-gsh-muted dark:text-[#8899aa] mt-0.5">{sub}</p>}
-      </div>
+      <p className="op-num op-accent" style={{ fontSize: 24, marginTop: 6, fontWeight: 500 }}>
+        {value}
+      </p>
+      {sub && <p className="op-mono op-dim" style={{ fontSize: 10, marginTop: 4 }}>{sub}</p>}
     </Card>
   )
 }

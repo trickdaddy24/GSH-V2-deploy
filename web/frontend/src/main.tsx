@@ -5,6 +5,7 @@ import { ThemeProvider } from './lib/ThemeContext'
 import { ToastProvider } from './lib/ToastContext'
 import App from './App'
 import './index.css'
+import './styles/operator.css'
 
 const queryClient = new QueryClient({
   defaultOptions: {

@@ -4,6 +4,18 @@ All notable changes to GuardianStreams Billing System are documented here.
 
 ---
 
+## [2.7.0] — 2026-05-17
+
+### Changed
+- **Frontend redesign → "Operator" direction** — dense data-console aesthetic: IBM Plex Sans/Mono, sharp corners, mono tabular numerals, Aurora theme (purple/dark) via a `--op-*` CSS-variable system (`src/styles/operator.css`).
+- **Login** rebuilt to the Operator console layout (status bar, two-panel grid, footer); same `login(username,password)` flow. Pre-auth side panel is static system info (no fabricated metrics).
+- **Layout** converted from sidebar to an Operator top-bar + horizontal tab nav + status footer; theme toggle + logout unchanged.
+- **Dashboard** restyled to the Operator console — all data still bound to the real API (`getDashboard`/`getNotificationStatus` + real backup/Telegram/bulk mutations); no mock panels.
+- Shared `ui` primitives (Button/Card/Input/Badge), `StatCard`, `StatusBadge` repointed to Operator classes with unchanged prop APIs — other pages inherit the look; full per-page restyle is phase 2.
+
+### Notes
+- Presentation-only: no changes to auth, API, routing, or react-query. Operator is dark-first; a light palette + ThemeContext wiring is a deferred follow-up.
+
 ## [2.6.0] — 2026-04-19
 
 ### Added
